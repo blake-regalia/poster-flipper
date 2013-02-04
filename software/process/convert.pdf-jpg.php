@@ -12,8 +12,6 @@ $SUB = array(
 	'thumb' => 'thumb'
 );
 
-print_r($REMOTE);
-exit;
 
 function convertPDFs($dir, $relativeDir) {
 	global $LOCAL, $REMOTE, $JPEG, $SUB;
@@ -72,7 +70,7 @@ function convertPDFs($dir, $relativeDir) {
 				.'"'.$dir. DIRECTORY_SEPARATOR .$file.'"';
 				
 			$pwd = getcwd();
-			chdir($LOCAL['tool']);
+			chdir($LOCAL['exec']);
 			echo '=> '.$subdirectory. DIRECTORY_SEPARATOR .$file."\n";
 			exec($exec);
 			chdir($pwd);
