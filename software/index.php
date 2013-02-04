@@ -1,21 +1,47 @@
 <?php
 
+// ini settings
+require_once("poster-ini-parser.php");
+$iniFile = new PosterIniParser("../config.ini");
+
+$REMOTE = $iniFile->getPaths('REMOTE');
+$LOCAL = $iniFile->getPaths('LOCAL');
+$JPEG = $iniFile->get('JPEG');
+
+$SUB = array(
+	'full' => 'full',
+	'thumb' => 'thumb'
+);
+
+
+// php helper classes
 require_once("dyna/file-manifest.php");
 require_once("dyna/csx-compiler.php");
 
-$MACHINE = 'stellar';
+$MACHINE = '*';
 
 switch($MACHINE) {
-case 'stellar':
-	$ABSOLUTE_ROOT_PATH = 'http://localhost:'.$_SERVER['SERVER_PORT'].'';
-	break;
 case 'basus':
 	$ABSOLUTE_ROOT_PATH = 'http://localhost/poster-flip-3d/software';
 	break;
+default:
+	$ABSOLUTE_ROOT_PATH = 'http://localhost:'.$_SERVER['SERVER_PORT'].'';
+	break;
 }
 
-$RESOURCE_PATH_JPLAYER = $ABSOLUTE_ROOT_PATH.'/resource/';
-$DATA_DIRECTORY = 'data';
+
+// resolve relative paths
+$cwd = getcwd();
+chdir('..');
+$script_path = getcwd();
+chdir($cwd);
+$script_substr_len = strlen($script_path)+1;
+
+
+// define path variables
+$RESOURCE_PATH_JPLAYER = substr($LOCAL['rsrc'], $script_substr_len);
+$DATA_DIRECTORY_RELATIVE = substr($LOCAL['data'], $script_substr_len);
+
 
 header('Content-Type:text/html; charset=UTF-8');
 ?>

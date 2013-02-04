@@ -1,25 +1,20 @@
 <?php
 
-/**
-* DO NOT END FOLLOWING DIRECTORY PATHS WITH SLASHES
-*
-* For Windows: Make sure to specify paths using double back-slash characters for path separators, `\\`
-**/
+require_once("poster-ini-parser.php");
+$iniFile = new PosterIniParser("../../config.ini");
 
-$ftp_directory = 'Q:\\Posters\\Posters to Display';
-$video_directory = $ftp_directory.'\\PDF to be Rasterized';
-$archive_directory = $ftp_directory.'\\Poster Archive - PDF';
+$REMOTE = $iniFile->getPaths('REMOTE');
+$LOCAL = $iniFile->getPaths('LOCAL');
+$JPEG = $iniFile->get('JPEG');
 
-$software_directory = 'C:\\PosterSoftware\\software';
-$output_directory = $software_directory.'\\data';
+$SUB = array(
+	'full' => 'full',
+	'thumb' => 'thumb'
+);
 
-$ffmpeg = $software_directory.'\\tools\\ffmpeg.exe';
 
-$thumb_width  = 211;
-$thumb_height = 160;
-$thumbnail_directory = $software_directory.'\\thumb';
-
-$video_overlay_icon = $software_directory.'\\resource\\overlay.video.png';
+$ffmpeg = $LOCAL['exec']. DIRECTORY_SEPARATOR ."ffmpeg.exe";
+$video_overlay_icon = $LOCAL['rsrc']. DIRECTORY_SEPARATOR ."overlay.video.png";
 
 $video_types = array(
 	'mp4',
@@ -30,13 +25,19 @@ $video_types = array(
 	'mov',
 );
 
-generateVideos($video_directory, $video_directory);
+
+generateVideos($REMOTE['pdfs'], $REMOTE['pdfs']);
+
 
 function genThumb($filename, $filepath, $subdirectory) {
-	global $ffmpeg, $thumb_width, $thumb_height, $thumbnail_directory, $video_overlay_icon;
+	global $LOCAL, $REMOTE, $JPEG, $MPEG, $ffmpeg, $video_overlay_icon;
+	
+	$thumb_dir = $LOCAL['data']. DIRECTORY_SEPARATOR .$SUB['thumb'];
+	$thumb_width = $JPEG['thumb_width'];
+	$thumb_height = $JPEG['thumb_height'];
 	
 	$input = $filepath;
-	$output = $thumbnail_directory.$subdirectory.DIRECTORY_SEPARATOR .$filename.'.jpg';
+	$output = $thumb_dir.$subdirectory. DIRECTORY_SEPARATOR .$filename.'.jpg';
 	
 	$ss = getDuration($input) * 0.15; // get duration at 6%
 	$opts = '-an -y -f mjpeg -ss '.$ss.' -s '.$thumb_width.'x'.$thumb_height.' -vframes 1';
@@ -88,7 +89,7 @@ function getDuration($file) {
 
 
 function generateVideos($dir, $relativeDir) {
-	global $output_directory, $thumbnail_directory, $software_directory, $archive_directory, $video_types;
+	global $LOCAL, $REMOTE, $JPEG, $SUB, $MPEG, $video_types;
 	$cwd = getcwd();
 	chdir($dir);
 	$files = scandir('.');
@@ -97,33 +98,53 @@ function generateVideos($dir, $relativeDir) {
 		if(is_dir($file)) {
 			$dump_path = substr(getcwd(),strlen($relativeDir)).DIRECTORY_SEPARATOR .$file;
 			
-			// create output subdirectory
-			if(!file_exists($output_directory.$dump_path)) {
-				@mkdir($output_directory.$dump_path);
+			// create output subdirectory (local)
+			$local_output = $LOCAL['data']. DIRECTORY_SEPARATOR .$SUB['full'].$dump_path;
+			if(!file_exists($local_output)) {
+				@mkdir($$local_output);
 			}
 			
-			// create thumbnail subdirectory
-			if(!file_exists($thumbnail_directory.$dump_path)) {
-				@mkdir($thumbnail_directory.$dump_path);
+			// create thumbnail subdirectory (local)
+			$local_thumb = $LOCAL['data']. DIRECTORY_SEPARATOR .$SUB['thumb'].$dump_path;
+			if(!file_exists($local_thumb)) {
+				@mkdir($local_thumb);
 			}
 			
-			// create archive directory
-			if(!file_exists($archive_directory.$dump_path)) {
-				@mkdir($archive_directory.$dump_path);
+			// create archive directory (remote)
+			$remote_archive = $REMOTE['arch'].$dump_path;
+			if(!file_exists($remote_archive)) {
+				@mkdir($remote_archive);
+			}
+			
+			// create output subdirectory (remote)
+			$remote_output = $REMOTE['data']. DIRECTORY_SEPARATOR .$SUB['full'].$dump_path;
+			if(!file_exists($remote_output)) {
+				@mkdir($remote_output);
+			}
+			
+			// create thumbnail subdirectory (remote)
+			$remote_thumb = $REMOTE['data']. DIRECTORY_SEPARATOR .$SUB['thumb'].$dump_path;
+			if(!file_exists($remote_thumb)) {
+				@mkdir($remote_thumb);
 			}
 			
 			// recurse on this subdirectory
 			generateVideos($dir.DIRECTORY_SEPARATOR .$file, $relativeDir);
 		}
 		
+		// if this file is of an accepted video file type
 		else if(in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), $video_types)) {
 			$subdirectory = substr(getcwd(),strlen($relativeDir));
-			$filepath = $output_directory.$subdirectory.DIRECTORY_SEPARATOR .$file;
+			$local_filepath = $LOCAL['data']. DIRECTORY_SEPARATOR .$SUB['full'].$subdirectory.DIRECTORY_SEPARATOR .$file;
+			$remote_filepath = $REMOTE['data']. DIRECTORY_SEPARATOR .$SUB['full'].$subdirectory.DIRECTORY_SEPARATOR .$file;
 			
-			// copy video file over to software directory
+			// copy video file over to local directory
 			$pwd = getcwd();
-			chdir($software_directory);
-			copy($dir.DIRECTORY_SEPARATOR .$file, $filepath);
+			chdir($REMOTE['data']);
+			
+			die('about to copy video file from cwd('.$REMOTE['data'].') => $cp '.$dir.DIRECTORY_SEPARATOR. $file.'; '.$local_filepath);
+			
+			copy($dir.DIRECTORY_SEPARATOR .$file, $local_filepath);
 			chdir($pwd);
 			
 			// if the conversion did not fail
