@@ -1,0 +1,1 @@
+server\php\php.exe software\process\generate.thumbnails.video.php

@@ -1,0 +1,1 @@
+server\php\php.exe software\process\convert.pdf-jpg.php
