@@ -1,5 +1,9 @@
 <?php
 
+// connect to network drive
+require_once('../php/network-drive.php');
+
+// ini settings
 require_once("../poster-ini-parser.php");
 $iniFile = new PosterIniParser("../../config.ini");
 

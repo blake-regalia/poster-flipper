@@ -1,7 +1,7 @@
 <?php
 
 // ini settings
-require_once("poster-ini-parser.php");
+require_once("php/poster-ini-parser.php");
 $iniFile = new PosterIniParser("../config.ini");
 
 $REMOTE = $iniFile->getPaths('REMOTE');

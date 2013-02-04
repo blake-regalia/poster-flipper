@@ -1,5 +1,10 @@
 <?php
 
+// connect to network drive
+require_once('../php/network-drive.php');
+
+
+// define image/video types
 $imageType = array(
 	'jpg',
 	'jpeg',
@@ -7,13 +12,13 @@ $imageType = array(
 	'png',
 	'tiff',
 );
-
 $videoType = array(
 	'mp4',
 	'ogv',
 	'webm',
 	'flv',
 );
+
 
 class posterFiles {
 	
