@@ -30,7 +30,7 @@ class posterFiles {
 		);
 	}
 
-	private static function getPosters($dir='.', $thumbDir='thumb', $pdir, &$array=array('>'=>true)) {
+	private static function getPosters($dir='full', $thumbDir='../thumb', $pdir, &$array=array('>'=>true)) {
 		global $imageType, $videoType;
 	
 		$array[':thumbSrc'] = 'resource/folder.png';
@@ -75,7 +75,7 @@ class posterFiles {
 		return $array;
 	}
 
-	public static function getJSON($dir, $thumbDir='thumb') {
+	public static function getJSON($dir, $thumbDir='../thumb') {
 		$pwd = getcwd();
 		chdir($dir);
 		$posters = self::getPosters('.', $thumbDir, $dir);
