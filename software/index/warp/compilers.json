@@ -1,0 +1,16 @@
+{
+	":order": ["head","css","bess","js","body","tail"],
+
+	"css": {
+		"compiler": "./css.js"
+	},
+	"bess": {
+		"compiler": "./bess.js"
+	},
+	"js": {
+		"compiler": "./js.js"
+	},
+	"html": {
+		"compiler": "./html.js"
+	}
+}

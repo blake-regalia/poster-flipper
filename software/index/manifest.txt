@@ -1,0 +1,11 @@
+/
+	css
+		*.css
+	js
+		kit.*.js
+		util.*.js
+		dom.*.js
+		ui.*.js
+	html
+		any.pre.html :head
+		index.body.html
