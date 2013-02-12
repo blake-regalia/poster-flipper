@@ -1,0 +1,96 @@
+globalTransitionTime: 0.2s;
+
+
+# / body {
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	overflow: hidden;
+}
+
+
+main {
+	block / #main {
+		position: fixed;
+		
+		width: 100%;
+		height: 100%;
+		
+		left: 0;
+		top: 0;
+		
+		textAlign: center;
+	}
+	
+	img / #main>img {
+		width: 100%;
+		height: auto;
+		
+		transition: all 0.2s ease-in-out;
+		
+		userSelect: none;
+	}
+}
+
+
+scroll {
+	block / #scroll {
+		position: fixed;
+		
+		width: 100%;
+		height: 180px;
+		
+		left: 0;
+		bottom: 0;
+		
+		backgroundColor: brown;
+		
+		transition: all 1s ease-out;
+	}
+	
+	hidden / #scroll.hidden {
+		bottom: (0 - $block.height);
+	}
+	
+	slider / #scroll>#slider {
+		position: absolute;
+		
+		width: 9999999px;
+		height: 100%;
+		
+		left: 0;
+		top: 6px;
+		
+		bottom: 0;
+		
+		transition: all $globalTransitionTime cubic-bezier(0,.43,.52,1);
+	}
+	
+	title / #scroll>#title {
+		position: fixed;
+		
+		width: 100%;
+		height: 26pt;
+		
+		bottom: 0;
+		
+		borderRadius: 2em 2em 0 0;
+		
+		color: white;
+		backgroundColor: rgba(0,0,0,0.3);
+		
+		textAlign: center;
+		fontFamily: verdana;
+		
+		transition: all 1.2s ease-out;
+	}
+	
+	hide / #scroll>#title.hide {
+		transform: translateY(100%);
+	}
+	
+	hiddenTitle / #scroll.hidden>#title {
+		background-color: rgba(0,0,0,0.75);
+	}
+
+}

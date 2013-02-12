@@ -24,7 +24,7 @@
 		while(++i !== len) {
 			var poster = db[i];
 			html += '<div class="thumbnail">'
-					+'<img src="'+poster.thumbSrc+'"/>'
+					+'<img src="'+poster.thumb+'"/>'
 				+'</div>'
 		}
 		

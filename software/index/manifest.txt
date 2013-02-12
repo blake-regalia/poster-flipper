@@ -1,6 +1,6 @@
 /
-	css
-		*.css
+	bess
+		*.bess
 	js
 		kit.*.js
 		util.*.js
@@ -9,3 +9,5 @@
 	html
 		any.pre.html :head
 		index.body.html
+
+/resource/* :static

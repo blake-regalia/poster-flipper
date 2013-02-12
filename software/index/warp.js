@@ -338,7 +338,6 @@ var http = require('http');
 		* private:
 		**/
 		var cache = {};
-		
 
 		var handleResponse = function(response, rule) {
 			response.end(
@@ -386,8 +385,32 @@ var http = require('http');
 					}
 
 					if(match) {
-						response.writeHead(200, {'Content-Type': 'text/html'});
-						handleResponse(response, match);
+						var args = match.args;
+						console.log(match);
+						
+						// static file serving
+						if(args.static) {
+							// requires mime for easy static hosting
+							var mime = require('mime');
+							
+							var path = __dirname+url;
+							fs.readFile(path, 'binary', function(err, file) {
+								if(err) {        
+									response.writeHead(500, {"Content-Type": "text/plain"});
+									response.write(err + "\n");
+									response.end();
+									return;
+								}
+
+								response.writeHead(200, {'Content-Type': mime.lookup(path)});
+								response.write(file, "binary");
+								response.end();
+							});
+						}
+						else {
+							response.writeHead(200, {'Content-Type': 'text/html'});
+							handleResponse(response, match);
+						}
 					}
 					else {
 						response.writeHead(404, {'Content-Type': 'text/plain'});
@@ -445,9 +468,9 @@ var ManifestParser={};(function(exports, module){/* Jison generated parser */
 var warp = (function(){
 var parser = {trace: function trace() { },
 yy: {},
-symbols_: {"error":2,"grammar":3,"rules":4,"EOF":5,"rule":6,"ruleMore":7,"URL":8,"dirs":9,"dir":10,"dirMore":11,"DIR":12,"argsOptional":13,"filesOptional":14,":":15,"args":16,"DIR_SPEC":17,"files":18,"file":19,"fileOptions":20,"fileMore":21,"fileOptionsMore":22,"FILE_SPEC":23,"FILE":24,"$accept":0,"$end":1},
-terminals_: {2:"error",5:"EOF",8:"URL",12:"DIR",15:":",17:"DIR_SPEC",23:"FILE_SPEC",24:"FILE"},
-productions_: [0,[3,2],[4,2],[7,1],[7,0],[6,2],[9,2],[11,1],[11,0],[10,3],[13,2],[13,0],[16,2],[16,0],[14,1],[14,0],[18,3],[20,2],[20,0],[22,2],[22,0],[21,1],[21,0],[19,1]],
+symbols_: {"error":2,"grammar":3,"rules":4,"EOF":5,"rule":6,"ruleMore":7,"URL":8,"reqSpecs":9,"dirMore":10,":":11,"reqArgs":12,"REQ_SPEC":13,"dirs":14,"dir":15,"DIR":16,"argsOptional":17,"filesOptional":18,"args":19,"DIR_SPEC":20,"files":21,"file":22,"fileOptions":23,"fileMore":24,"fileOptionsMore":25,"FILE_SPEC":26,"FILE":27,"$accept":0,"$end":1},
+terminals_: {2:"error",5:"EOF",8:"URL",11:":",13:"REQ_SPEC",16:"DIR",20:"DIR_SPEC",26:"FILE_SPEC",27:"FILE"},
+productions_: [0,[3,2],[4,2],[7,1],[7,0],[6,3],[9,2],[9,0],[12,2],[12,0],[14,2],[10,1],[10,0],[15,3],[17,2],[17,0],[19,2],[19,0],[18,1],[18,0],[21,3],[23,2],[23,0],[25,2],[25,0],[24,1],[24,0],[22,1]],
 performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$$,_$) {
 
 var $0 = $$.length - 1;
@@ -466,56 +489,76 @@ case 4:
 break;
 case 5:
 			this.$ = {};
-			this.$[$$[$0-1]] = $$[$0];
+			this.$[$$[$0-2]] = {
+				dirs: $$[$0],
+				args: $$[$0-1],
+			};
 		
 break;
 case 6:
 			this.$ = $$[$0];
-			this.$.push($$[$0-1]);
+		
+break;
+case 7:
+			this.$ = {};
 		
 break;
 case 8:
-			this.$ = [];
+			this.$ = $$[$0];
+			this.$[$$[$0-1]] = true;
 		
 break;
 case 9:
+			this.$ = {};
+		
+break;
+case 10:
+			this.$ = $$[$0];
+			this.$.push($$[$0-1]);
+		
+break;
+case 12:
+			this.$ = [];
+		
+break;
+case 13:
 			this.$ = __($$[$0], $$[$0-1], {
 				dir: $$[$0-2],
 			});
 		
 break;
-case 10:
+case 14:
 			this.$ = $$[$0];
 		
 break;
-case 11:
+case 15:
 			this.$ = {
 				args: {},
 			};
 		
 break;
-case 12:
+case 16:
 			this.$ = $$[$0];
 			this.$.args[$$[$0-1]] = true;
 		
 break;
-case 13:
+case 17:
 			this.$ = {
 				args: {},
 			};
 		
 break;
-case 14:
+case 18:
 			this.$ = {
 				targets: $$[$0],
 			};
 		
 break;
-case 15:
+case 19:
 			this.$ = {};
 		
 break;
-case 16:
+case 20:
 			this.$ = $$[$0];
 			this.$.push({
 				pattern: $$[$0-2],
@@ -523,30 +566,30 @@ case 16:
 			});
 		
 break;
-case 17:
+case 21:
 			this.$ = $$[$0];
 		
 break;
-case 18:
+case 22:
 			this.$ = {};
 		
 break;
-case 19:
+case 23:
 			this.$ = $$[$0];
 			this.$[$$[$0-1]] = true;
 		
 break;
-case 20:
+case 24:
 			this.$ = {};
 		
 break;
-case 22:
+case 26:
 			this.$ = [];
 		
 break;
 }
 },
-table: [{3:1,4:2,6:3,8:[1,4]},{1:[3]},{5:[1,5]},{4:7,5:[2,4],6:3,7:6,8:[1,4]},{9:8,10:9,12:[1,10]},{1:[2,1]},{5:[2,2]},{5:[2,3]},{5:[2,5],8:[2,5]},{5:[2,8],8:[2,8],9:12,10:9,11:11,12:[1,10]},{5:[2,11],8:[2,11],12:[2,11],13:13,15:[1,14],24:[2,11]},{5:[2,6],8:[2,6]},{5:[2,7],8:[2,7]},{5:[2,15],8:[2,15],12:[2,15],14:15,18:16,19:17,24:[1,18]},{5:[2,13],8:[2,13],12:[2,13],16:19,17:[1,20],24:[2,13]},{5:[2,9],8:[2,9],12:[2,9]},{5:[2,14],8:[2,14],12:[2,14]},{5:[2,18],8:[2,18],12:[2,18],15:[1,22],20:21,24:[2,18]},{5:[2,23],8:[2,23],12:[2,23],15:[2,23],24:[2,23]},{5:[2,10],8:[2,10],12:[2,10],24:[2,10]},{5:[2,13],8:[2,13],12:[2,13],16:23,17:[1,20],24:[2,13]},{5:[2,22],8:[2,22],12:[2,22],18:25,19:17,21:24,24:[1,18]},{5:[2,20],8:[2,20],12:[2,20],22:26,23:[1,27],24:[2,20]},{5:[2,12],8:[2,12],12:[2,12],24:[2,12]},{5:[2,16],8:[2,16],12:[2,16]},{5:[2,21],8:[2,21],12:[2,21]},{5:[2,17],8:[2,17],12:[2,17],24:[2,17]},{5:[2,20],8:[2,20],12:[2,20],22:28,23:[1,27],24:[2,20]},{5:[2,19],8:[2,19],12:[2,19],24:[2,19]}],
+table: [{3:1,4:2,6:3,8:[1,4]},{1:[3]},{5:[1,5]},{4:7,5:[2,4],6:3,7:6,8:[1,4]},{5:[2,7],8:[2,7],9:8,11:[1,9],16:[2,7]},{1:[2,1]},{5:[2,2]},{5:[2,3]},{5:[2,12],8:[2,12],10:10,14:11,15:12,16:[1,13]},{5:[2,9],8:[2,9],12:14,13:[1,15],16:[2,9]},{5:[2,5],8:[2,5]},{5:[2,11],8:[2,11]},{5:[2,12],8:[2,12],10:16,14:11,15:12,16:[1,13]},{5:[2,15],8:[2,15],11:[1,18],16:[2,15],17:17,27:[2,15]},{5:[2,6],8:[2,6],16:[2,6]},{5:[2,9],8:[2,9],12:19,13:[1,15],16:[2,9]},{5:[2,10],8:[2,10]},{5:[2,19],8:[2,19],16:[2,19],18:20,21:21,22:22,27:[1,23]},{5:[2,17],8:[2,17],16:[2,17],19:24,20:[1,25],27:[2,17]},{5:[2,8],8:[2,8],16:[2,8]},{5:[2,13],8:[2,13],16:[2,13]},{5:[2,18],8:[2,18],16:[2,18]},{5:[2,22],8:[2,22],11:[1,27],16:[2,22],23:26,27:[2,22]},{5:[2,27],8:[2,27],11:[2,27],16:[2,27],27:[2,27]},{5:[2,14],8:[2,14],16:[2,14],27:[2,14]},{5:[2,17],8:[2,17],16:[2,17],19:28,20:[1,25],27:[2,17]},{5:[2,26],8:[2,26],16:[2,26],21:30,22:22,24:29,27:[1,23]},{5:[2,24],8:[2,24],16:[2,24],25:31,26:[1,32],27:[2,24]},{5:[2,16],8:[2,16],16:[2,16],27:[2,16]},{5:[2,20],8:[2,20],16:[2,20]},{5:[2,25],8:[2,25],16:[2,25]},{5:[2,21],8:[2,21],16:[2,21],27:[2,21]},{5:[2,24],8:[2,24],16:[2,24],25:33,26:[1,32],27:[2,24]},{5:[2,23],8:[2,23],16:[2,23],27:[2,23]}],
 defaultActions: {5:[2,1],6:[2,2],7:[2,3]},
 parseError: function parseError(str, hash) {
     throw new Error(str);
@@ -677,7 +720,8 @@ function develop(rules) {
 	for(var e in rules) {
 		compiledRules.push({
 			regex: genRegex(e),
-			compile: constructUrlDef(e, rules[e])
+			args: rules[e].args,
+			compile: constructUrlDef(e, rules[e].dirs)
 		});
 	}
 	return compiledRules;
@@ -885,52 +929,66 @@ lexer.performAction = function anonymous(yy,yy_,$avoiding_name_collisions,YY_STA
 
 var YYSTATE=YY_START
 switch($avoiding_name_collisions) {
-case 0: this.begin('dir'); 
+case 0: return 8; 
 break;
-case 1: return 8; 
+case 1: this.begin('dir'); 
 break;
-case 2: this.begin('file'); 
+case 2: 
 break;
-case 3: 
+case 3: this.begin('reqSpec'); return yy_.yytext; 
 break;
-case 4: this.popState(); 
+case 4: return 13; 
 break;
-case 5: return 12; 
+case 5: this.popState(); this.begin('dir'); 
 break;
-case 6: this.begin('dirSpec'); return yy_.yytext; 
+case 6: this.popState(); 
 break;
-case 7: return 17; 
+case 7: return 16; 
 break;
-case 8: this.popState(); this.begin('file'); 
+case 8: this.begin('file'); 
 break;
-case 9: this.popState(); 
+case 9: 
 break;
-case 10: this.popState(); this.popState(); 
+case 10: this.popState(); 
 break;
-case 11: 
+case 11: this.begin('dirSpec'); return yy_.yytext; 
 break;
-case 12: this.popState(); 
+case 12: return 20; 
 break;
-case 13: return 24; 
+case 13: this.popState(); this.begin('file'); 
 break;
-case 14: this.begin('fileSpec'); return yy_.yytext; 
+case 14: this.popState(); 
 break;
-case 15: return 23; 
+case 15: this.popState(); this.popState(); 
 break;
-case 16: this.popState(); 
+case 16: return 27; 
 break;
-case 17: this.popState(); this.popState(); 
+case 17: 
 break;
-case 18:  
+case 18: this.popState(); 
 break;
-case 19: return yy_.yytext; 
+case 19: this.popState(); this.popState(); 
 break;
-case 20: return 5; 
+case 20: this.begin('fileSpec'); return yy_.yytext; 
+break;
+case 21: return 26; 
+break;
+case 22: this.popState(); 
+break;
+case 23: this.popState(); this.popState(); 
+break;
+case 24: this.popState(); this.popState(); this.popState(); 
+break;
+case 25:  
+break;
+case 26: return yy_.yytext; 
+break;
+case 27: return 5; 
 break;
 }
 };
-lexer.rules = [/^(?:(\r?\n[\t]))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:\\n\b)/,/^(?:([^ \t\r\n:]+))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:\\n\b)/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:([^ \t\r\n:]+))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:([ ])+)/,/^(?:.)/,/^(?:$)/];
-lexer.conditions = {"dir":{"rules":[2,3,4,5,6,18,19,20],"inclusive":true},"dirSpec":{"rules":[7,8,9,10,18,19,20],"inclusive":true},"file":{"rules":[11,12,13,14,18,19,20],"inclusive":true},"fileSpec":{"rules":[15,16,17,18,19,20],"inclusive":true},"INITIAL":{"rules":[0,1,18,19,20],"inclusive":true}};
+lexer.rules = [/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([ ])+)/,/^(?:.)/,/^(?:$)/];
+lexer.conditions = {"reqSpec":{"rules":[4,5,6,25,26,27],"inclusive":true},"dir":{"rules":[7,8,9,10,11,25,26,27],"inclusive":true},"dirSpec":{"rules":[12,13,14,15,25,26,27],"inclusive":true},"file":{"rules":[16,17,18,19,20,25,26,27],"inclusive":true},"fileSpec":{"rules":[21,22,23,24,25,26,27],"inclusive":true},"INITIAL":{"rules":[0,1,2,3,25,26,27],"inclusive":true}};
 return lexer;})()
 parser.lexer = lexer;
 function Parser () { this.yy = {}; }Parser.prototype = parser;parser.Parser = Parser;
