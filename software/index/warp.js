@@ -144,7 +144,8 @@ var fs = require('fs');
 						if(echoMerge) {
 							var data = fs.readFileSync(path, 'utf-8');
 							if(mFilter) {
-								data = mFilter(data);
+								var realpath = fs.realpathSync(path);
+								data = mFilter(data, realpath);
 							}
 							b += data;
 						}
@@ -1145,7 +1146,7 @@ if (typeof module !== 'undefined' && require.main === module) {
 			case 'compile':
 				var rules = warpHandler.getRules();
 
-				var target = argv[++i];
+				var target = '/'+argv[++i];
 				var file = argv[++i];
 
 				var match;

@@ -1,7 +1,8 @@
 /**
 * Bess Compiler
 **/
-var parser = require('./bess-parser.js');
+require('./util.jsol.js');
+var parser = require('./bess.parser.js');
 
 exports.compile = function(tools, rule) {
 	var Manifest = tools.Manifest;
@@ -19,8 +20,8 @@ exports.compile = function(tools, rule) {
 	css.post('</style>');
 
 	js.merge();
-	js.pre('<script type="text/javascript">\nvar CSS=');
-	js.post('\n</script>')
+	js.pre('<script type="text/javascript">\nvar CSS_DATA=');
+	js.post(';\n</script>')
 
 	var parseBess = function(data) {
 		var out = parser.parse(data);

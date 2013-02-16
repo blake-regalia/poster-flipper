@@ -11,8 +11,6 @@
 	
 	var __func__ = 'CSS';
 	
-	
-	
 	var construct = function() {
 		
 		var self = {
@@ -93,7 +91,7 @@
 	var resolveTarget = function(str) {
 		
 		// start with the parent node
-		var node = global;
+		var node = CSS_DATA;
 		
 		// split the string by namespace separator
 		var terms = str.split('.');

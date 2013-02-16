@@ -15,14 +15,14 @@
 			viewportHeight = $(document).height()
 		
 		var viewportCenter = $(document).width() * 0.5,
-			previewCenter = (CSS('thumbnail.panel.width').pixels() + CSS('thumbnail.$paddingLeftRight').pixels()) * 0.5,
-			thumbnailOuterWidth = CSS('thumbnail.width').pixels() + CSS('thumbnail.$paddingLeftRight').pixels();
+			previewCenter = (CSS('thumbnail.block.$.panel.width').pixels() + CSS('thumbnail.padding-sides').pixels()) * 0.5,
+			thumbnailOuterWidth = CSS('thumbnail.block.width').pixels() + CSS('thumbnail.padding-sides').pixels();
 		
 		var html = '';
 		
-		var len = db.length, i = -1;
+		var len = db.files.length, i = -1;
 		while(++i !== len) {
-			var poster = db[i];
+			var poster = db.files[i];
 			html += '<div class="thumbnail">'
 					+'<img src="'+poster.thumb+'"/>'
 				+'</div>'
@@ -68,7 +68,7 @@
 				
 //				$('#slider').css('left', viewportCenter - posterIndex*thumbnailOuterWidth - previewCenter);
 
-				$('#title').text(db[posterIndex].title);
+				$('#title').text(db.files[posterIndex].title);
 			},
 			
 			// 
@@ -79,7 +79,7 @@
 					$('canvas').get(0).getContext('2d').drawImage(img,0,0,viewportWidth,viewportHeight);
 				};
 				/**/
-				img.src = db[posterIndex].src;
+				img.src = db.files[posterIndex].src;
 				$('#main').empty().append(img);
 				
 				$('#scroll').addClass('hidden');

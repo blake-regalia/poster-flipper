@@ -10,6 +10,9 @@
 	"js": {
 		"compiler": "./js.js"
 	},
+	"server": {
+		"compiler": "./server.js"
+	},
 	"html": {
 		"compiler": "./html.js"
 	}
