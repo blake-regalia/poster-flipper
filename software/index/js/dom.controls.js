@@ -25,14 +25,29 @@
 		var modeIndex = -1;
 		var captor;
 		
+		var fadeoutTimer = 0;
 		
 		var self = {
 		
 			//
 			shiftMode: function() {
+				$('#mode-overlay').removeClass();
+				
+				if(captor && captor.close) captor.close();
+				
 				modeIndex = (modeIndex+1) % modes.length;
 				captor = modes[modeIndex];
-				$('#mode-overlay').removeClass().addClass('mode-'+captor.getClassName());
+				
+				if(captor.open) captor.open();
+				
+				setTimeout(function() {
+					$('#mode-overlay').addClass('mode-'+captor.getClassName()).addClass('fadeable');
+					
+					clearTimeout(fadeoutTimer);
+					fadeoutTimer = setTimeout(function() {
+						$('#mode-overlay').addClass('hide');
+					}, 1200);
+				}, 20);
 			},
 		};
 		
@@ -48,9 +63,9 @@
 		/**
 		* public:
 		**/
-		$.extend(operator, {
-			
-		});
+			operator[''] = function() {
+
+			};
 		
 		
 		/**
@@ -58,18 +73,26 @@
 		**/
 		self.shiftMode();
 		
-		$(document).bind('mousewheel', function(e) {
-			if(e.wheelDelta < 0) {
+		var wheelHandler = function(e) {
+			console.log(e);
+			var wheelDelta = e.wheelDelta? e.wheelDelta: e.detail;
+			console.log(wheelDelta);
+			if(wheelDelta < 0) {
 				captor.scroll(1);
 			}
 			else {
 				captor.scroll(-1);
 			}
-		});
+		};
+		
+		$(document).bind('DOMMouseScroll', wheelHandler);
+		$(document).bind('mousewheel', wheelHandler);
 		
 		$(document).bind('keydown', function(e) {
 			if(actionKeys.indexOf(e.keyCode || e.which) !== -1)  {
-				self.shiftMode();
+				if(!captor.select()) {
+					self.shiftMode();
+				}
 			}
 		});
 		
@@ -82,7 +105,7 @@
 	/**
 	* public static operator() ()
 	**/
-	var global = window[__func__] = function() {
+	var expose = window[__func__] = function() {
 		if(this !== window) {
 			instance = construct.apply(this, arguments);
 			return instance;
@@ -97,25 +120,24 @@
 	/**
 	* public static:
 	**/
-	$.extend(global, {
-		
+	
 		//
-		toString: function() {
+		expose['toString'] = function() {
 			return __func__+'()';
-		},
+		};
 		
 		//
-		error: function() {
+		expose['error'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.error.apply(console, args);
-		},
+		};
 		
 		//
-		warn: function() {
+		expose['warn'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.warn.apply(console, args);
-		},
-	});
+		};
+
 })();

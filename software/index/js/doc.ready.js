@@ -1,5 +1,6 @@
 $(document).ready(function() {
 	
+	/*
 	Keyboard({
 		'right': function() {
 			Slider().scroll(1);
@@ -17,24 +18,17 @@ $(document).ready(function() {
 			Slider().zoom(-1);
 		},
 	});
+	*/
 	
 	/**/
 	
-	new Controls(Slider, [DOM_VK['SPACE'], DOM_VK['RETURN']], [VerticalPan]);
-	
-	$(document).bind('mousewheel', function(e) {
-		console.log(e);
-		if(e.wheelDelta < 0) {
-			Slider().scroll(1);
-		}
-		else {
-			Slider().scroll(-1);
-		}
-	});
-	/**/
-	
-	$.getJSON('/get-posters.json', function(json) {
-		new Slider(json);
+	$.getJSON('./server/get-posters.json', function(json) {
+		new Controls(
+			new Slider(json),
+			[ DOM_VK['SPACE'], DOM_VK['RETURN'] ],
+			[ new VerticalPan(), new HorizontalPan(), new Zoom() ]
+		);
+		/**/
 	});
 	
 });

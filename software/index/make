@@ -1,0 +1,4 @@
+node warp.js out "" index.html
+cp out/index.html ../http/index.html
+node ../http/server.js
+

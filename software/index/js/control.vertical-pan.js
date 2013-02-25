@@ -1,15 +1,26 @@
-
+/*!
+ * Author: Blake Regalia - blake.regalia@gmail.com
+ *
+ * Copyright 2012 Blake Regalia
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
+ */
 
 (function(namespace) {
 	
 	var __func__ = 'VerticalPan';
 	
-	var construct = function(db) {
+	var instance;
+	
+	var verticalScrollAmount = 80;
+	
+	var construct = function() {
 		
 		/**
 		* private:
 		**/
-		
+		var translateY = 0;
 		
 		/**
 		* public operator() ();
@@ -26,7 +37,24 @@
 			
 			// 
 			scroll: function(direction) {
-				console.log(direction);
+				translateY += -1 * direction * verticalScrollAmount;
+				PosterTransform('translateY',translateY+'px');
+			},
+			
+			//
+			select: function() {
+				return false;
+			},
+			
+			//
+			getClassName: function() {
+				return __func__.toLowerCase();
+			},
+			
+			//
+			reset: function() {
+				translateY = 0;
+				PosterTransform('translateY',translateY+'px');
 			},
 			
 		});
@@ -57,6 +85,12 @@
 	* public static:
 	**/
 	$.extend(global, {
+	
+		//
+		reset: function() {
+			return (instance && instance.reset());
+		},
+		
 		
 		//
 		toString: function() {
@@ -77,10 +111,5 @@
 			console.warn.apply(console, args);
 		},
 		
-		
-		//
-		getClassName: function() {
-			return __func__.toLowerCase();
-		},
 	});
 })(window);

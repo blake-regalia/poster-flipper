@@ -18,7 +18,7 @@ app.use('/data', express.static(__dirname+'/'+posterDataPath));
 app.use('/resource', express.static(__dirname+'/resource'));
 
 // for the poster data
-app.get('/get-posters.json', function(req, res) {
+app.get('/server/get-posters.json', function(req, res) {
 	res.setHeader('Content-Type', 'application/json');
 	res.end(
 		JSON.stringify(
@@ -30,7 +30,7 @@ app.get('/get-posters.json', function(req, res) {
 // for the index page
 app.get('/', function(req, res) {
 	res.setHeader('Content-Type', 'text/html');
-	fs.readFile('index.html','utf-8', function(err, data) {
+	fs.readFile(__dirname+'/index.html','utf-8', function(err, data) {
 		if(err) {
 			res.end('failed to open index file');
 		}

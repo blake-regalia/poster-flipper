@@ -2430,45 +2430,149 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
 })();
 
 /************************
-** dom.slider.js
+** util.event-handler.js
 ************************/
+/**
 
-
+**/
 (function(namespace) {
 	
-	var __func__ = 'Slider';
+	var __func__ = 'EventHandler';
 	
-	var construct = function(db) {
+	
+	
+	var construct = function() {
 		
 		/**
 		* private:
 		**/
-		var posterIndex = 0;
+		var eventType = {};
 		
-		var viewportWidth = $(document).width(),
-			viewportHeight = $(document).height()
-		
-		var viewportCenter = $(document).width() * 0.5,
-			previewCenter = (CSS('thumbnail.block.$.panel.width').pixels() + CSS('thumbnail.padding-sides').pixels()) * 0.5,
-			thumbnailOuterWidth = CSS('thumbnail.block.width').pixels() + CSS('thumbnail.padding-sides').pixels();
-		
-		var html = '';
-		
-		var len = db.files.length, i = -1;
-		while(++i !== len) {
-			var poster = db.files[i];
-			html += '<div class="thumbnail">'
-					+'<img src="'+poster.thumb+'"/>'
-				+'</div>'
-		}
-		
-		$('canvas')
-			.width(viewportWidth)
-			.height(viewportHeight);
-		
-		var self = {
-			dom: $('#slider').html(html),
+		/**
+		* public operator() ();
+		**/
+		var operator = function(eventName, fn) {
+			
+			// reference the event handler and assume it is defined
+			var handlerList = eventType[eventName];
+			
+			// if it is not defined, assign it an empty array
+			if(!handlerList) handlerList = eventType[eventName] = [];
+			
+			// if only the eventName was given
+			if(arguments.length === 1) {
+				
+				// return a callback function handler
+				return function() {
+					var len = handlerList.length, i = -1;
+					while(++i !== len) {
+						handlerList[i].apply(this, arguments);
+					}
+					handlerList.length = 0;
+				};
+			}
+			
+			// else a callback function was given, prepend it to the handler lsit
+			handlerList.push(fn);
 		};
+		
+		
+		/**
+		* public:
+		**/
+		
+			
+			operator.unbind = function(eventName, fn) {
+				var handlerList = eventType[eventName];
+				if(!handlerList) return;
+				
+				var i = handlerList.length;
+				if(fn) {
+					var i = handlerList.indexOf(fn);
+					handlerList.splice(i, 1);
+				}
+				else {
+					handlerList.length = 0;
+				}
+				return;
+			};
+		
+		
+		return operator;
+		
+	};
+	
+	
+	
+	/**
+	* public static operator() ()
+	**/
+	var global = namespace[__func__] = function() {
+		if(this !== namespace) {
+			instance = construct.apply(this, arguments);
+			return instance;
+		}
+		else {
+			return instance;
+		}
+	};
+	
+	
+	
+	/**
+	* public static:
+	**/
+		
+		//
+		global.toString = function() {
+			return __func__+'()';
+		};
+		
+		//
+		global.error = function() {
+			var args = Array.prototype.slice.call(arguments);
+			args.unshift(__func__+':');
+			console.error.apply(console, args);
+		};
+		
+		//
+		global.warn = function() {
+			var args = Array.prototype.slice.call(arguments);
+			args.unshift(__func__+':');
+			console.warn.apply(console, args);
+		};
+		
+})(window);
+
+/************************
+** control.zoom.js
+************************/
+/*!
+ * Author: Blake Regalia - blake.regalia@gmail.com
+ *
+ * Copyright 2012 Blake Regalia
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
+ */
+
+(function(namespace) {
+	
+	var __func__ = 'Zoom';
+	
+	var instance;
+	
+	var zoomAmount = 0.1;
+	
+	var maxScale = 10;
+	var minScale = 0.1;
+	
+	var construct = function() {
+		
+		/**
+		* private:
+		**/
+		var scale = 1;
 		
 		/**
 		* public operator() ();
@@ -2485,39 +2589,169 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
 			
 			// 
 			scroll: function(direction) {
-				if($('#scroll').is('.hidden')) {
-					$('#scroll').removeClass('hidden');
-				}
+				scale *= 1+direction*zoomAmount;
+				if(scale < minScale) scale = minScale;
+				else if(scale > maxScale) scale = maxScale;
 				
-				posterIndex += direction;
-				if(posterIndex >= $('.thumbnail').length) {
-					posterIndex = 0;
-				}
-				else if(posterIndex < 0) {
-					posterIndex = $('.thumbnail').length-1;
-				}
-				
-				$('.panel').removeClass('panel');
-				$('.thumbnail').eq(posterIndex).addClass('panel');
-				
-//				$('#slider').css('left', viewportCenter - posterIndex*thumbnailOuterWidth - previewCenter);
-
-				$('#title').text(db.files[posterIndex].title);
+				PosterTransform('scale', scale);
+				PosterTransform.setTemp({
+					translateX: (PosterTransform.val('translateX')*scale)+'px',
+					translateY: (PosterTransform.val('translateY')*scale)+'px',
+				}, true);
 			},
 			
-			// 
+			//
 			select: function() {
-				var img = new Image();
-				/**
-				img.onload = function() {
-					$('canvas').get(0).getContext('2d').drawImage(img,0,0,viewportWidth,viewportHeight);
-				};
-				/**/
-				img.src = db.files[posterIndex].src;
-				$('#main').empty().append(img);
-				
-				$('#scroll').addClass('hidden');
+				return false;
 			},
+			
+			//
+			getClassName: function() {
+				return __func__.toLowerCase();
+			},
+			
+			//
+			reset: function() {
+				scale = 1;
+				PosterTransform('scale',scale);
+			},
+			
+			//
+			open: function() {
+				console.warn('opening zoom tool');
+				PosterTransform('translateX', (PosterTransform.val('translateX')/scale)+'px');
+				PosterTransform('translateY', (PosterTransform.val('translateY')/scale)+'px');
+			},
+			
+			//
+			close: function() {
+				console.warn('closing zoom tool');
+				PosterTransform('translateX', (PosterTransform.val('translateX')*scale)+'px');
+				PosterTransform('translateY', (PosterTransform.val('translateY')*scale)+'px');
+			},
+			
+		});
+		
+		
+		return operator;
+		
+	};
+	
+	
+	
+	/**
+	* public static operator() ()
+	**/
+	var global = namespace[__func__] = function() {
+		if(this !== namespace) {
+			instance = construct.apply(this, arguments);
+			return instance;
+		}
+		else {
+			return instance;
+		}
+	};
+	
+	
+	var getPosterCenter = function() {
+		
+	};
+	
+	
+	/**
+	* public static:
+	**/
+	$.extend(global, {
+	
+		//
+		reset: function() {
+			return (instance && instance.reset());
+		},
+		
+		//
+		toString: function() {
+			return __func__+'()';
+		},
+		
+		//
+		error: function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.error.apply(console, args);
+		},
+		
+		//
+		warn: function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.warn.apply(console, args);
+		},
+		
+	});
+})(window);
+
+/************************
+** control.vertical-pan.js
+************************/
+/*!
+ * Author: Blake Regalia - blake.regalia@gmail.com
+ *
+ * Copyright 2012 Blake Regalia
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
+ */
+
+(function(namespace) {
+	
+	var __func__ = 'VerticalPan';
+	
+	var instance;
+	
+	var verticalScrollAmount = 80;
+	
+	var construct = function() {
+		
+		/**
+		* private:
+		**/
+		var translateY = 0;
+		
+		/**
+		* public operator() ();
+		**/
+		var operator = function() {
+			
+		};
+		
+		
+		/**
+		* public:
+		**/
+		$.extend(operator, {
+			
+			// 
+			scroll: function(direction) {
+				translateY += -1 * direction * verticalScrollAmount;
+				PosterTransform('translateY',translateY+'px');
+			},
+			
+			//
+			select: function() {
+				return false;
+			},
+			
+			//
+			getClassName: function() {
+				return __func__.toLowerCase();
+			},
+			
+			//
+			reset: function() {
+				translateY = 0;
+				PosterTransform('translateY',translateY+'px');
+			},
+			
 		});
 		
 		
@@ -2546,6 +2780,12 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
 	* public static:
 	**/
 	$.extend(global, {
+	
+		//
+		reset: function() {
+			return (instance && instance.reset());
+		},
+		
 		
 		//
 		toString: function() {
@@ -2566,12 +2806,421 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
 			console.warn.apply(console, args);
 		},
 		
+	});
+})(window);
+
+/************************
+** control.horizontal-pan.js
+************************/
+/*!
+ * Author: Blake Regalia - blake.regalia@gmail.com
+ *
+ * Copyright 2012 Blake Regalia
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
+ */
+
+(function(namespace) {
+	
+	var __func__ = 'HorizontalPan';
+	
+	var instance;
+	
+	var horizontalScrollAmount = 20;
+	
+	var construct = function() {
+		
+		/**
+		* private:
+		**/
+		var translateX = 0;
+		
+		/**
+		* public operator() ();
+		**/
+		var operator = function() {
+			
+		};
+		
+		
+		/**
+		* public:
+		**/
+			
+			// 
+			operator['scroll'] = function(direction) {
+				translateX += -1 * direction * horizontalScrollAmount;
+				PosterTransform('translateX',translateX+'px');
+			};
+			
+			//
+			operator['select'] = function() {
+				return false;
+			};
+			
+			//
+			operator['getClassName'] = function() {
+				return __func__.toLowerCase();
+			};
+			
+			//
+			operator['reset'] = function() {
+				translateX = 0;
+				PosterTransform('translateX',translateX+'px');
+			};
+		
+		
+		return operator;
+		
+	};
+	
+	
+	
+	/**
+	* public static operator() ()
+	**/
+	var expose = namespace[__func__] = function() {
+		if(this !== namespace) {
+			instance = construct.apply(this, arguments);
+			return instance;
+		}
+		else {
+			return instance;
+		}
+	};
+	
+	
+	
+	/**
+	* public static:
+	**/
+	
+		//
+		expose['reset'] = function() {
+			return (instance && instance.reset());
+		};
+		
 		
 		//
-		getClassName: function() {
-			return __func__.toLowerCase();
-		},
-	});
+		expose['toString'] = function() {
+			return __func__+'()';
+		};
+		
+		//
+		expose['error'] = function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.error.apply(console, args);
+		};
+		
+		//
+		expose['warn'] = function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.warn.apply(console, args);
+		};
+		
+})(window);
+
+/************************
+** dom.slider.js
+************************/
+
+
+(function(namespace) {
+	
+	var __func__ = 'Slider';
+	var instance;
+	var eventHandler = new EventHandler();
+	
+	var titleVisibleDuration = 3600;
+	var panelVisibleDuration = 5000;
+	
+	var infiniteCycle = false;
+	
+	var construct = function(db) {
+		
+		/**
+		* private:
+		**/
+		var image;
+		var posterIndex = 0;
+		var selected = -1;
+		
+		var cwd = db;
+		var up = [cwd];
+		
+		var timeoutTitle = 0;
+		var timeoutScroll = 0;
+		
+		var viewportWidth = $(window).width(),
+			viewportHeight = $(window).height()
+		
+		var viewportCenter = $(document).width() * 0.5,
+			previewCenter = (CSS('thumbnail.block.$.panel.width').pixels() + CSS('thumbnail.padding-sides').pixels()) * 0.5,
+			thumbnailOuterWidth = CSS('thumbnail.block.$.panel.width').pixels() + 2*CSS('thumbnail.padding-sides').pixels();
+		
+		var gen = function() {
+			var html = '<div class="thumbnail directory" file=".."><img src="resource/directory.up.png"/></div>';
+		
+			console.log(cwd);	
+			var files = cwd.files;
+			for(var i=files.length-1; i>=0; i--) {
+				var file = files[i];
+				html += '<div class="thumbnail'+(file.type=='dir'? ' directory':'')+'" file="'+(file.name || file.title)+'">'
+					+'<img src="'+file.thumb+'"/>'
+					+(file.type=='dir'?'<span>'+file.name+'</span>':'')
+				+'</div>'
+			}
+			
+			return html;
+		}
+		
+		var cd = function(path) {
+			if(path == '..') {
+				cwd = up.pop();
+				if(!up.length) up.push(cwd);
+			}
+			else {
+				up.push(cwd);
+				cwd = cwd[path];
+			}
+			
+			return gen();
+		}
+		
+		$('canvas')
+			.width(viewportWidth)
+			.height(viewportHeight);
+		
+		var self = {
+			dom: $('#slider').html(
+				gen()
+			),
+		};
+		
+		// jPlayer init
+		jPlayerConstructor = function(type, src) {
+			var media = {};
+			media[type] = src;
+			return {
+				ready: function() {
+					$(this)
+						.jPlayer('setMedia', media)
+						.jPlayer('play');
+				},
+				size: {
+					width: '100%',
+					height: '100%',
+				},
+				swfPath: RESOURCE_PATH_JPLAYER,
+				solution: 'html,flash',
+				supplied: type,
+			};
+		};
+		
+		
+		/**
+		* public operator() ();
+		**/
+		var operator = function() {
+			
+		};
+		
+		
+		/**
+		* public:
+		**/
+			
+			// 
+			
+			operator['scroll'] = function(direction) {
+				// don't let the title dissapear while we're scrolling through posters
+				clearTimeout(timeoutTitle);
+				$('#title').removeClass('hide');
+				
+				// nor the panel
+				clearTimeout(timeoutScroll);
+				$('#scroll').removeClass('hidden');
+				
+				posterIndex += direction;
+				if(posterIndex >= $('.thumbnail').length) {
+					if(infiniteCycle) {
+						posterIndex = 0;
+					}
+					else {
+						posterIndex = $('.thumbnail').length-1;
+						return;
+					}
+				}
+				else if(posterIndex < 0) {
+					if(infiniteCycle) {
+						posterIndex = $('.thumbnail').length-1;
+					}
+					else {
+						posterIndex = 0;
+						return;
+					}
+				}
+				
+				$('.panel').removeClass('panel');
+				
+				var elmt = $('.thumbnail').eq(posterIndex).get(0);
+				$(elmt).addClass('panel');
+				
+				$('#slider').css('left', viewportCenter - posterIndex*thumbnailOuterWidth - previewCenter);
+
+				var fname = $(elmt).attr('file') || '../';
+				var file = cwd[fname];
+				$('#title').text((cwd[fname] && file[':title']) || fname);
+				
+				timeoutScroll = setTimeout(function() {
+					operator.hidePanel();
+					
+				}, panelVisibleDuration);
+			};
+			
+			//
+			operator['hidePanel'] = function() {
+				$('#scroll').addClass('hidden');
+					
+				timeoutTitle = setTimeout(function() {
+					$('#title').addClass('hide');
+				}, titleVisibleDuration);
+			};
+			
+			// 
+			operator['select'] = function() {
+				if($('#scroll').is('.hidden')) {
+					return false;
+				}
+				
+				if(posterIndex == selected) {
+					operator.hidePanel();
+					return false;
+				}
+				else {
+					VerticalPan.reset();
+					HorizontalPan.reset();
+					Zoom.reset();
+					
+					var elmt = $('.thumbnail').eq(posterIndex);
+					var fname = $(elmt).attr('file');
+					var file = cwd[fname];
+					
+					if(fname=='..' || file['>']) {
+						$('#slider').html(
+							cd(fname)
+						);
+						posterIndex = 0;
+						operator.scroll(0);
+						return true;
+					}
+					else {
+						selected = posterIndex;
+						switch(file[':type']) {
+						case 'image':
+							$('#poster').show();
+							$('#poster').attr('src', file[':src']);
+							$('#video').jPlayer('destroy');
+							break;
+							
+						case 'video':
+							$('#poster').hide();
+							$('#video').jPlayer('destroy');
+								
+							var fsrc = file[':src'];
+							var type = '';
+							(function() {
+								var ext = fsrc.substr(fsrc.lastIndexOf('.')+1);
+								switch(ext) {
+								case 'ogg':
+									type = 'ogv'; break;
+								case 'webm':
+									type = 'webmv'; break;
+								case 'mp4':
+									type = 'm4v'; break;
+								default: // flv
+									type = ext; break;
+								}
+							})();
+							
+							$('#video')
+								.jPlayer(
+									jPlayerConstructor(type, ABSOLUTE_ROOT_PATH+'/'+fsrc)
+								);
+							break;
+						}
+						operator.hidePanel();
+						return true;
+					}
+				}
+			};
+			
+			operator['getImage'] = function() {
+				return image;
+			};
+		
+			//
+			operator['getClassName'] = function() {
+				return __func__.toLowerCase();
+			};
+		
+		
+		return operator;
+		
+	};
+	
+	
+	
+	/**
+	* public static operator() ()
+	**/
+	var expose = namespace[__func__] = function() {
+		if(this !== namespace) {
+			instance = construct.apply(this, arguments);
+			return instance;
+		}
+		else {
+			return instance;
+		}
+	};
+	
+	
+	
+	/**
+	* public static:
+	**/
+
+		//
+		expose['toString'] = function() {
+			return __func__+'()';
+		};
+		
+		//
+		expose['error'] = function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.error.apply(console, args);
+		};
+		
+		//
+		expose['warn'] = function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.warn.apply(console, args);
+		};
+		
+		expose['ready'] = function(fn) {
+			if(!fn) {
+				eventHandler('ready')();
+			}
+			else {
+				eventHandler('ready', fn);
+			}
+		};
+
 })(window);
 
 /************************
@@ -2604,15 +3253,306 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
 		var modeIndex = -1;
 		var captor;
 		
+		var fadeoutTimer = 0;
 		
 		var self = {
 		
 			//
 			shiftMode: function() {
+				$('#mode-overlay').removeClass();
+				
+				if(captor && captor.close) captor.close();
+				
 				modeIndex = (modeIndex+1) % modes.length;
 				captor = modes[modeIndex];
-				$('#mode-overlay').removeClass().addClass('mode-'+captor.getClassName());
+				
+				if(captor.open) captor.open();
+				
+				setTimeout(function() {
+					$('#mode-overlay').addClass('mode-'+captor.getClassName()).addClass('fadeable');
+					
+					clearTimeout(fadeoutTimer);
+					fadeoutTimer = setTimeout(function() {
+						$('#mode-overlay').addClass('hide');
+					}, 1200);
+				}, 20);
 			},
+		};
+		
+		
+		/**
+		* public operator() ();
+		**/
+		var operator = function() {
+			
+		};
+		
+		
+		/**
+		* public:
+		**/
+			operator[''] = function() {
+
+			};
+		
+		
+		/**
+		* initialize:
+		**/
+		self.shiftMode();
+		
+		var wheelHandler = function(e) {
+			console.log(e);
+			var wheelDelta = e.wheelDelta? e.wheelDelta: e.detail;
+			console.log(wheelDelta);
+			if(wheelDelta < 0) {
+				captor.scroll(1);
+			}
+			else {
+				captor.scroll(-1);
+			}
+		};
+		
+		$(document).bind('DOMMouseScroll', wheelHandler);
+		$(document).bind('mousewheel', wheelHandler);
+		
+		$(document).bind('keydown', function(e) {
+			if(actionKeys.indexOf(e.keyCode || e.which) !== -1)  {
+				if(!captor.select()) {
+					self.shiftMode();
+				}
+			}
+		});
+		
+		return operator;
+		
+	};
+	
+	
+	
+	/**
+	* public static operator() ()
+	**/
+	var expose = window[__func__] = function() {
+		if(this !== window) {
+			instance = construct.apply(this, arguments);
+			return instance;
+		}
+		else {
+			return instance;
+		}
+	};
+	
+	
+	
+	/**
+	* public static:
+	**/
+	
+		//
+		expose['toString'] = function() {
+			return __func__+'()';
+		};
+		
+		//
+		expose['error'] = function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.error.apply(console, args);
+		};
+		
+		//
+		expose['warn'] = function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.warn.apply(console, args);
+		};
+
+})();
+
+/************************
+** ui.keyboard.js
+************************/
+(function() {
+	var db = {};
+	window.Keyboard = function(obj) {
+		var code;
+		for(var key in obj) {
+			if(typeof key === String.type && (code = DOM_VK[key.toUpperCase()])) {
+				db[code] = obj[key];
+			}
+		}
+		$(document).keydown(function(e) {
+			if(db[e.keyCode]) {
+				db[e.keyCode].apply(null, [e]);
+			}
+		});
+	};
+})();
+
+/************************
+** doc.ready.js
+************************/
+$(document).ready(function() {
+	
+	/*
+	Keyboard({
+		'right': function() {
+			Slider().scroll(1);
+		},
+		'left': function() {
+			Slider().scroll(-1);
+		},
+		'space': function() {
+			Slider().select();
+		},
+		'up': function() {
+			Slider().zoom(1);
+		},
+		'down': function() {
+			Slider().zoom(-1);
+		},
+	});
+	*/
+	
+	/**/
+	
+	$.getJSON('./server/get-posters.json', function(json) {
+		new Controls(
+			new Slider(json),
+			[ DOM_VK['SPACE'], DOM_VK['RETURN'] ],
+			[ new VerticalPan(), new HorizontalPan(), new Zoom() ]
+		);
+		/**/
+	});
+	
+});
+
+/************************
+** poster-transform.js
+************************/
+/*!
+ * Author: Blake Regalia - blake.regalia@gmail.com
+ *
+ * Copyright 2012 Blake Regalia
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
+ */
+
+(function(namespace) {
+	    
+	var __func__ = 'PosterTransform';
+	
+	var attrs = {};
+	
+	/**
+	* public static operator() ()
+	**/
+	var global = namespace[__func__] = function(attr, val, dns) {
+		if(dns) {
+			set = $.extend({}, attrs);
+		}
+		else {
+			set = attrs;
+		}
+		
+		set[attr] = val;
+		
+		var b = [];
+		for(var e in set) {
+			b.push(e+'('+set[e]+')');
+		}
+		
+		var transform = b.join(' ');
+		console.log(transform);
+		$('#poster').css({
+			'-moz-transform': transform,
+			'-webkit-transform': transform,
+			'transform': transform,
+		});
+	};
+	
+	
+	/**
+	* public static:
+	**/
+	$.extend(global, {
+	
+		setTemp: function(list) {
+			var set = $.extend({}, attrs);
+			for(var e in list) {
+				set[e] = list[e];
+			}
+			var b = [];
+			for(var e in set) {
+				b.push(e+'('+set[e]+')');
+			}
+			var transform = b.join(' ');
+			console.log(transform);
+			$('#poster').css({
+				'-moz-transform': transform,
+				'-webkit-transform': transform,
+				'transform': transform,
+			});
+		},
+		
+		//
+		val: function(attr) {
+			return parseFloat(attrs[attr]);
+		},
+		
+		//
+		toString: function() {
+			return __func__+'()';
+		},
+		
+		//
+		error: function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.error.apply(console, args);
+		},
+		
+		//
+		warn: function() {
+			var args = Array.cast(arguments);
+			args.unshift(__func__+':');
+			console.warn.apply(console, args);
+		},
+	});
+})(window);
+
+/************************
+** example.instance.class.js
+************************/
+/*!
+ * Author: Blake Regalia - blake.regalia@gmail.com
+ *
+ * Copyright 2012 Blake Regalia
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
+ */
+
+(function() {
+	
+	var __func__ = 'Instance';
+	
+	
+	
+	var construct = function() {
+		
+		/**
+		* private:
+		**/
+		
+		
+		/**
+		* protected:
+		**/
+		var self = {
+			
 		};
 		
 		
@@ -2631,26 +3571,6 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
 			
 		});
 		
-		
-		/**
-		* initialize:
-		**/
-		self.shiftMode();
-		
-		$(document).bind('mousewheel', function(e) {
-			if(e.wheelDelta < 0) {
-				captor.scroll(1);
-			}
-			else {
-				captor.scroll(-1);
-			}
-		});
-		
-		$(document).bind('keydown', function(e) {
-			if(actionKeys.indexOf(e.keyCode || e.which) !== -1)  {
-				self.shiftMode();
-			}
-		});
 		
 		return operator;
 		
@@ -2698,160 +3618,6 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
 		},
 	});
 })();
-
-/************************
-** dom.vertical-pan.js
-************************/
-
-
-(function(namespace) {
-	
-	var __func__ = 'VerticalPan';
-	
-	var construct = function(db) {
-		
-		/**
-		* private:
-		**/
-		
-		
-		/**
-		* public operator() ();
-		**/
-		var operator = function() {
-			
-		};
-		
-		
-		/**
-		* public:
-		**/
-		$.extend(operator, {
-			
-			// 
-			scroll: function(direction) {
-				console.log(direction);
-			},
-			
-		});
-		
-		
-		return operator;
-		
-	};
-	
-	
-	
-	/**
-	* public static operator() ()
-	**/
-	var global = namespace[__func__] = function() {
-		if(this !== namespace) {
-			instance = construct.apply(this, arguments);
-			return instance;
-		}
-		else {
-			return instance;
-		}
-	};
-	
-	
-	
-	/**
-	* public static:
-	**/
-	$.extend(global, {
-		
-		//
-		toString: function() {
-			return __func__+'()';
-		},
-		
-		//
-		error: function() {
-			var args = Array.cast(arguments);
-			args.unshift(__func__+':');
-			console.error.apply(console, args);
-		},
-		
-		//
-		warn: function() {
-			var args = Array.cast(arguments);
-			args.unshift(__func__+':');
-			console.warn.apply(console, args);
-		},
-		
-		
-		//
-		getClassName: function() {
-			return __func__.toLowerCase();
-		},
-	});
-})(window);
-
-/************************
-** ui.keyboard.js
-************************/
-(function() {
-	var db = {};
-	window.Keyboard = function(obj) {
-		var code;
-		for(var key in obj) {
-			if(typeof key === String.type && (code = DOM_VK[key.toUpperCase()])) {
-				db[code] = obj[key];
-			}
-		}
-		$(document).keydown(function(e) {
-			if(db[e.keyCode]) {
-				db[e.keyCode].apply(null, [e]);
-			}
-		});
-	};
-})();
-
-/************************
-** doc.ready.js
-************************/
-$(document).ready(function() {
-	
-	Keyboard({
-		'right': function() {
-			Slider().scroll(1);
-		},
-		'left': function() {
-			Slider().scroll(-1);
-		},
-		'space': function() {
-			Slider().select();
-		},
-		'up': function() {
-			Slider().zoom(1);
-		},
-		'down': function() {
-			Slider().zoom(-1);
-		},
-	});
-	
-	/**/
-	
-	new Controls(Slider, [DOM_VK['SPACE'], DOM_VK['RETURN']], [VerticalPan]);
-	
-	$(document).bind('mousewheel', function(e) {
-		console.log(e);
-		if(e.wheelDelta < 0) {
-			Slider().scroll(1);
-		}
-		else {
-			Slider().scroll(-1);
-		}
-	});
-	/**/
-	
-	$.getJSON('/get-posters.json', function(json) {
-		new Slider(json);
-	});
-	
-});
 </script>
 
 </head><body>

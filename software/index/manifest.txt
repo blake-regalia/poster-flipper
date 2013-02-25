@@ -4,9 +4,11 @@
 	js :merge
 		kit.*.js
 		util.*.js
+		control.*.js
 		dom.*.js
 		ui.*.js
 		doc.ready.js
+		*.js
 	html
 		any.pre.html :head
 		index.body.html
