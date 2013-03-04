@@ -8,6 +8,8 @@
 	
 	var titleVisibleDuration = 3600;
 	var panelVisibleDuration = 5000;
+
+	var DF_POSTER_INDEX = 0;
 	
 	var infiniteCycle = false;
 	
@@ -17,7 +19,7 @@
 		* private:
 		**/
 		var image;
-		var posterIndex = 0;
+		var posterIndex = DF_POSTER_INDEX;
 		var selected = -1;
 		
 		var cwd = db;
@@ -34,13 +36,13 @@
 			thumbnailOuterWidth = CSS('thumbnail.block.$.panel.width').pixels() + 2*CSS('thumbnail.padding-sides').pixels();
 		
 		var gen = function() {
-			var html = '<div class="thumbnail directory" file=".."><img src="resource/directory.up.png"/></div>';
+			var html = '';
+			// var html = '<div class="thumbnail directory" fileIndex="-1"><img src="resource/directory.up.png"/></div>';
 		
-			console.log(cwd);	
 			var files = cwd.files;
-			for(var i=files.length-1; i>=0; i--) {
+			for(var i=0; i<files.length; i++) {
 				var file = files[i];
-				html += '<div class="thumbnail'+(file.type=='dir'? ' directory':'')+'" file="'+(file.name || file.title)+'" index="'+i+'">'
+				html += '<div class="thumbnail'+(file.type=='dir'? ' directory':'')+'" fileIndex="'+i+'">'
 					+'<img src="'+file.thumb+'"/>'
 					+(file.type=='dir'?'<span>'+file.name+'</span>':'')
 				+'</div>'
@@ -49,14 +51,14 @@
 			return html;
 		}
 		
-		var cd = function(path) {
-			if(path == '..') {
+		var cd = function(findex) {
+			if(findex == DF_POSTER_INDEX) {
 				cwd = up.pop();
 				if(!up.length) up.push(cwd);
 			}
 			else {
 				up.push(cwd);
-				cwd = cwd[path];
+				cwd = cwd.files[findex];
 			}
 			
 			return gen();
@@ -115,23 +117,25 @@
 				// nor the panel
 				clearTimeout(timeoutScroll);
 				$('#scroll').removeClass('hidden');
+
+				var thumbnail_length = $('.thumbnail').length+DF_POSTER_INDEX;
 				
 				posterIndex += direction;
-				if(posterIndex >= $('.thumbnail').length) {
+				if(posterIndex >= thumbnail_length) {
 					if(infiniteCycle) {
-						posterIndex = 0;
+						posterIndex = DF_POSTER_INDEX;
 					}
 					else {
-						posterIndex = $('.thumbnail').length-1;
+						posterIndex = thumbnail_length-1;
 						return;
 					}
 				}
-				else if(posterIndex < 0) {
+				else if(posterIndex < DF_POSTER_INDEX) {
 					if(infiniteCycle) {
-						posterIndex = $('.thumbnail').length-1;
+						posterIndex = thumbnail_length-1;
 					}
 					else {
-						posterIndex = 0;
+						posterIndex = DF_POSTER_INDEX;
 						return;
 					}
 				}
@@ -141,11 +145,16 @@
 				var elmt = $('.thumbnail').eq(posterIndex).get(0);
 				$(elmt).addClass('panel');
 				
-				$('#slider').css('left', viewportCenter - posterIndex*thumbnailOuterWidth - previewCenter);
+				$('#slider').css('left', viewportCenter - (posterIndex-DF_POSTER_INDEX)*thumbnailOuterWidth - previewCenter);
 
-				var findex = $(elmt).attr('fileIndex') || 0;
-				var file = cwd.files[findex];
-				$('#title').text(file.title || file.name);
+				var findex = $(elmt).attr('fileIndex');
+				if(findex == DF_POSTER_INDEX) {
+					$('#title').text('');
+				}
+				else {
+					var file = cwd.files[findex];
+					$('#title').text(file.title || file.name);
+				}
 				
 				timeoutScroll = setTimeout(function() {
 					operator.hidePanel();
@@ -179,22 +188,22 @@
 					
 					var elmt = $('.thumbnail').eq(posterIndex);
 					var findex = $(elmt).attr('fileIndex');
-					var file = cwd.files[findex];
+					var file = cwd.files[findex] || {type:'dir'};
 					
 					if(file.type == 'dir') {
 						$('#slider').html(
-							cd(fname)
+							cd(findex)
 						);
-						posterIndex = 0;
+						posterIndex = DF_POSTER_INDEX;
 						operator.scroll(0);
 						return true;
 					}
 					else {
 						selected = posterIndex;
-						switch(file[':type']) {
+						switch(file.type) {
 						case 'image':
 							$('#poster').show();
-							$('#poster').attr('src', file[':src']);
+							$('#poster').attr('src', file.src);
 							$('#video').jPlayer('destroy');
 							break;
 							
@@ -202,7 +211,7 @@
 							$('#poster').hide();
 							$('#video').jPlayer('destroy');
 								
-							var fsrc = file[':src'];
+							var fsrc = file.src;
 							var type = '';
 							(function() {
 								var ext = fsrc.substr(fsrc.lastIndexOf('.')+1);

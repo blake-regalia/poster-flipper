@@ -74,9 +74,9 @@
 		self.shiftMode();
 		
 		var wheelHandler = function(e) {
-			console.log(e);
+			// console.log(e);
 			var wheelDelta = e.wheelDelta? e.wheelDelta: e.detail;
-			console.log(wheelDelta);
+			// console.log(wheelDelta);
 			if(wheelDelta < 0) {
 				captor.scroll(1);
 			}
@@ -120,7 +120,7 @@
 	/**
 	* public static:
 	**/
-	
+
 		//
 		expose['toString'] = function() {
 			return __func__+'()';

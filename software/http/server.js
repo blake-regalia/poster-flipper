@@ -2,7 +2,7 @@
 var posterDataPath = '../../Poster File Data';
 
 // define server port
-var serverPort = 2314;
+var serverPort = 2225;
 
 // require filesystem
 var fs = require('fs');
@@ -61,14 +61,19 @@ function getPosterJson(path) {
 	var files = fs.readdirSync(pdp);
 	
 	var res = {name: path, type:'dir', thumb:'resource/folder.png'};
-	res.files = [];
+	var resDirs = [{
+		type: 'dir',
+		name: '',
+		thumb: 'resource/directory.up.png'
+	}];
+	var resFiles = [];
 	
 	for(var i=files.length-1; i>=0; i--) {
 		var file = files[i];
 		var stats = fs.statSync(pdp+'/'+file);
 		if(!stats) continue;
 		if(stats.isDirectory()) {
-			res.files.push(
+			resDirs.push(
 				__(getPosterJson(path+'/'+file), {
 					name: file,
 				})
@@ -76,7 +81,7 @@ function getPosterJson(path) {
 		}
 		else if(stats.isFile()) {
 			if(/\.jpe?g/i.test(file)) {
-				res.files.push({
+				resFiles.push({
 					title: file.substr(0, file.lastIndexOf('.')),
 					src: 'data/full'+path+'/'+file,
 					thumb: 'data/thumb'+path+'/'+file,
@@ -86,5 +91,6 @@ function getPosterJson(path) {
 		}
 	}
 	
+	res.files = resDirs.concat(resFiles);
 	return res;
 }

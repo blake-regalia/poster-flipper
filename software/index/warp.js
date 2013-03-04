@@ -32,7 +32,7 @@ var fs = require('fs');
 
 	var castArray = Array.prototype.slice;
 	
-	var construct = function() {
+	var construct = function(initPrePost) {
 		
 		/**
 		* private:
@@ -42,11 +42,13 @@ var fs = require('fs');
 		var resolver = [];
 		var directory = {};
 
-		var finalPre = '\n';
+		if(typeof initPrePost == 'undefined') initPrePost = '\n';
+		var finalPre = initPrePost;
 		var finalOut = '';
-		var finalPost = '\n';
+		var finalPost = initPrePost;
 		
 		var mFilter;
+		var mFinalFilter;
 		
 		/**
 		* public operator() ();
@@ -59,8 +61,13 @@ var fs = require('fs');
 		/**
 		* public:
 		**/
+
 			operator['filterNext'] = function(filter) {
 				mFilter = filter;
+			};
+
+			operator['filterAfterMerge'] = function(filter) {
+				mFinalFilter = filter;
 			};
 
 			operator['add'] = function(pattern, args, dir) {
@@ -120,23 +127,23 @@ var fs = require('fs');
 
 								case 'number':
 									switch(resolve) {
-										case pcs['FILENAME']:
+										case expose['FILENAME']:
 											b += file.substr(0, file.lastIndexOf('.'));
 											break;
-										case pcs['FILENAME_EXT']:
+										case expose['FILENAME_EXT']:
 											b += file;
 											break;
-										case pcs['RELATIVE_PATH']:
+										case expose['RELATIVE_PATH']:
 											b += path;
 											break;
-										case pcs['ABSOLUTE_PATH']:
+										case expose['ABSOLUTE_PATH']:
 											b += 'abs{'+file+'}';
 											break;
 									}
 									break;
 
 								default:
-									pcs.warn('failed to understand argument: ',resolve);
+									expose.warn('failed to understand argument: ',resolve);
 									break;
 							}
 						}
@@ -162,8 +169,11 @@ var fs = require('fs');
 				}
 			};
 
-			operator['out'] = function() {
-				return finalPre+'\n'+finalOut+finalPost+'\n';
+			operator['out'] = function(delim) {
+				if(typeof delim == 'undefined') delim = '\n';
+				var fOut = finalOut;
+				if(mFinalFilter) fOut = mFinalFilter(fOut);
+				return finalPre+delim+fOut+finalPost+delim;
 			};
 
 			operator['link'] = function() {
@@ -194,7 +204,7 @@ var fs = require('fs');
 	/**
 	* public static operator() ()
 	**/
-	var pcs = namespace[__func__] = function() {
+	var expose = namespace[__func__] = function() {
 		if(this !== namespace) {
 			instance = construct.apply(this, arguments);
 			return instance;
@@ -212,25 +222,25 @@ var fs = require('fs');
 
 		// constants
 		var constInt = 0;
-		pcs['FILENAME']      = constInt++;
-		pcs['FILENAME_EXT']  = constInt++;
-		pcs['RELATIVE_PATH'] = constInt++;
-		pcs['ABSOLUTE_PATH'] = constInt++;
+		expose['FILENAME']      = constInt++;
+		expose['FILENAME_EXT']  = constInt++;
+		expose['RELATIVE_PATH'] = constInt++;
+		expose['ABSOLUTE_PATH'] = constInt++;
 		
 		//
-		pcs['toString'] = function() {
+		expose['toString'] = function() {
 			return __func__+'()';
 		};
 		
 		//
-		pcs['error'] = function() {
+		expose['error'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.error.apply(console, args);
 		};
 		
 		//
-		pcs['warn'] = function() {
+		expose['warn'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.warn.apply(console, args);
@@ -246,52 +256,66 @@ var fs = require('fs');
 	/**
 	* private static:
 	**/
-	var __func__ = 'Compilers';
+	var __func__ = 'Modules';
+	var warpDir = './warp_modules';
+	var manifestFile = warpDir+'/module_manifest.js';
+	
+	// prepare a hash to hold the handlers
+	var handlers = {};
 	
 	// prepare a hash to hold the compilers
 	var compilers = {};
 	var compilerOrder = {};
+
+	// attempt to acquire the module manifest file
+	var moduleManifest = require(manifestFile).manifest;
+
+	// explores the manifest modules of a particular interest
+	var exploreModule = function(sub, action) {
+		var obj = {};
+
+		var def = moduleManifest[sub];
+		for(var e in def) {
+			var file = def[e];
+			
+			if(file) {
+				var attempt = require(warpDir+'/'+sub+'/'+file);
+				if(attempt && attempt[action]) {
+					obj[e] = attempt[action];
+				}
+				else {
+					console.warn('failed to inclue handler file: '+compilerFile);
+				}
+			}
+		}
+
+		return obj;
+	};
 	
 
 	// parse the compilers manifest
 	(function() {
+		
+		// setup request handlers
+		handlers = exploreModule('handler', 'handle');
 
-		var data = fs.readFileSync('./warp/compilers.json', 'utf-8');
-		var compilersJSON = JSON.parse(data);
-
-		for(var e in compilersJSON) {
-
-			var definition = compilersJSON[e];
-
-			// if this definition is an arg
-			if(e[0] === ':') {
-				if(e === ':order') {
-					for(var i=0; i<definition.length; i++) {
-						// commit this compiler alias to the order object
-						compilerOrder[definition[i]] = '';
-					}
-				}
-			}
-
-			// otherwise it is a dir
-			else {
-				var compilerFile = definition.compiler;
-				var attempt = require('./warp/'+compilerFile);
-				if(attempt) {
-					compilers[e] = attempt;
-				}
-				else {
-					console.warn('failed to inclue compiler file: '+compilerFile);
-				}
-			}
+		// comiler order definition
+		compilerOrderDef = moduleManifest.compilerOrder;
+		for(var i=0; i<compilerOrderDef.length; i++) {
+			// commit this compiler alias to the order object
+			compilerOrder[compilerOrderDef[i]] = '';
 		}
+
+		// setup `dir` target compilers
+		compilers = exploreModule('compiler', 'compile');
+		
 	})();
 	
 	
 	/**
 	* public static operator() ()
 	**/
-	var pcs = namespace[__func__] = {};
+	var expose = namespace[__func__] = {};
 	
 	
 	/**
@@ -299,23 +323,33 @@ var fs = require('fs');
 	**/
 		
 		//
-		pcs['toString'] = function() {
+		expose['toString'] = function() {
 			return __func__+'()';
 		};
 
 		// handles aliasing of compilers
-		pcs['get'] = function(alias) {
+		expose['getCompiler'] = function(alias) {
 			if(compilers[alias]) {
-				return __({}, compilers[alias]);
+				return compilers[alias];
 			}
 			else {
 				return false;
 			}
 		};
 
-		// returns a new compiler order object
-		pcs['getOrder'] = function() {
+		// returns a clone of the compiler order object
+		expose['getCompilerOrder'] = function() {
 			return __({}, compilerOrder);
+		};
+
+		// handles aliasing of handlers
+		expose['getHandler'] = function(alias) {
+			if(handlers[alias]) {
+				return handlers[alias];
+			}
+			else {
+				return false;
+			}
 		};
 		
 })(global);
@@ -341,9 +375,21 @@ var http = require('http');
 		var cache = {};
 
 		var handleResponse = function(response, rule) {
-			response.end(
-				rule.compile()
-			);
+			var out = rule.exec();
+			if(out.error) {
+				var error = out.error;
+				var formattedError = error.message
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;');
+				response.end(
+					'<h1>Error thrown by: '+error.module+'</h1><br />'
+					+'<h2>in file: "'+error.file+'"</h2><br />'
+					+'<pre>'+formattedError+'</pre>'
+				);
+			}
+			else {
+				response.end(out);
+			}
 		};
 		
 		/**
@@ -362,12 +408,16 @@ var http = require('http');
 			};
 
 			operator['launch'] = function(warpHandler, port) {
-				
-				http.createServer(function(request, response) {
+
+				// create the server instance
+				var server = http.createServer(function(request, response) {
 					var rules = warpHandler.getRules();
 
 					var url = request.url;
+					console.log(' '+request.method+' '+url);
 					var match = false;
+
+					console.log(rules);
 
 					if(cache[url] && !rules.virgin) {
 						match = cache[url];
@@ -387,28 +437,26 @@ var http = require('http');
 
 					if(match) {
 						var args = match.args;
-						console.log(match);
+						var exec = match.exec;
+						var args = exec.def.args;
+						var terminal = false;
+
+						for(var i=0; i<args.length; i++) {
+							var handlerName = args[i];
+							var handler = Modules.getHandler(handlerName);
+							if(!handler) {
+								response.end('<h1>Error</h1><br /><h3>handler not found: "'+handlerName+'"</h3>');
+								terminal = true;
+								break;
+							}
+							else {
+								terminal = handler(request, response);
+								if(terminal) break;
+							}
+						}
 						
 						// static file serving
-						if(args.static) {
-							// requires mime for easy static hosting
-							var mime = require('mime');
-							
-							var path = __dirname+url;
-							fs.readFile(path, 'binary', function(err, file) {
-								if(err) {        
-									response.writeHead(500, {"Content-Type": "text/plain"});
-									response.write(err + "\n");
-									response.end();
-									return;
-								}
-
-								response.writeHead(200, {'Content-Type': mime.lookup(path)});
-								response.write(file, "binary");
-								response.end();
-							});
-						}
-						else {
+						if(!terminal) {
 							response.writeHead(200, {'Content-Type': 'text/html'});
 							handleResponse(response, match);
 						}
@@ -417,7 +465,23 @@ var http = require('http');
 						response.writeHead(404, {'Content-Type': 'text/plain'});
 						response.end('Not Found\n');
 					}
-				}).listen(port || 2314, '127.0.0.1');
+				});
+
+				// handle server startup errors
+				server.on('error', function(e) {
+					if(e.code == 'EADDRINUSE') {
+						server.listen(++port, '127.0.0.1');
+					}
+				});
+
+				// emit print message when port is settled
+				server.on('listening', function() {
+					console.log('server running at http://127.0.0.1:'+port);
+				});
+
+				// attempt to listen to the port
+				port = port || 2314;
+				server.listen(port, '127.0.0.1');
 			};
 		
 		return operator;
@@ -429,7 +493,7 @@ var http = require('http');
 	/**
 	* public static operator() ()
 	**/
-	var pcs = namespace[__func__] = function() {
+	var expose = namespace[__func__] = function() {
 		if(this !== namespace) {
 			instance = construct.apply(this, arguments);
 			return instance;
@@ -446,19 +510,19 @@ var http = require('http');
 	**/
 		
 		//
-		pcs['toString'] = function() {
+		expose['toString'] = function() {
 			return __func__+'()';
 		};
 		
 		//
-		pcs['error'] = function() {
+		expose['error'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.error.apply(console, args);
 		};
 		
 		//
-		pcs['warn'] = function() {
+		expose['warn'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.warn.apply(console, args);
@@ -469,9 +533,9 @@ var ManifestParser={};(function(exports, module){/* Jison generated parser */
 var warp = (function(){
 var parser = {trace: function trace() { },
 yy: {},
-symbols_: {"error":2,"grammar":3,"rules":4,"EOF":5,"rule":6,"ruleMore":7,"URL":8,"reqSpecs":9,"dirMore":10,":":11,"reqArgs":12,"REQ_SPEC":13,"dirs":14,"dir":15,"DIR":16,"argsOptional":17,"filesOptional":18,"args":19,"DIR_SPEC":20,"files":21,"file":22,"fileOptions":23,"fileMore":24,"fileOptionsMore":25,"FILE_SPEC":26,"FILE":27,"$accept":0,"$end":1},
-terminals_: {2:"error",5:"EOF",8:"URL",11:":",13:"REQ_SPEC",16:"DIR",20:"DIR_SPEC",26:"FILE_SPEC",27:"FILE"},
-productions_: [0,[3,2],[4,2],[7,1],[7,0],[6,3],[9,2],[9,0],[12,2],[12,0],[14,2],[10,1],[10,0],[15,3],[17,2],[17,0],[19,2],[19,0],[18,1],[18,0],[21,3],[23,2],[23,0],[25,2],[25,0],[24,1],[24,0],[22,1]],
+symbols_: {"error":2,"grammar":3,"rules":4,"EOF":5,"rule":6,"ruleMore":7,"URL":8,"reqSpecs":9,"dirMore":10,":":11,"reqArgs":12,"REQ_SPEC":13,"dirs":14,"dir":15,"DIR":16,"argsOptional":17,"filesOptional":18,"SPLIT":19,"args":20,"DIR_SPEC":21,"files":22,"file":23,"fileOptions":24,"fileMore":25,"fileOptionsMore":26,"FILE_SPEC":27,"FILE":28,"$accept":0,"$end":1},
+terminals_: {2:"error",5:"EOF",8:"URL",11:":",13:"REQ_SPEC",16:"DIR",19:"SPLIT",21:"DIR_SPEC",27:"FILE_SPEC",28:"FILE"},
+productions_: [0,[3,2],[4,2],[7,1],[7,0],[6,3],[9,2],[9,0],[12,2],[12,0],[14,2],[10,1],[10,0],[15,3],[15,1],[17,2],[17,0],[20,2],[20,0],[18,1],[18,0],[22,3],[24,2],[24,0],[26,2],[26,0],[25,1],[25,0],[23,1]],
 performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$$,_$) {
 
 var $0 = $$.length - 1;
@@ -501,16 +565,16 @@ case 6:
 		
 break;
 case 7:
-			this.$ = {};
+			this.$ = [];
 		
 break;
 case 8:
 			this.$ = $$[$0];
-			this.$[$$[$0-1]] = true;
+			this.$.push($$[$0-1]);
 		
 break;
 case 9:
-			this.$ = {};
+			this.$ = [];
 		
 break;
 case 10:
@@ -529,37 +593,43 @@ case 13:
 		
 break;
 case 14:
-			this.$ = $$[$0];
+			this.$ = {
+				isSplit: true,
+			};
 		
 break;
 case 15:
+			this.$ = $$[$0];
+		
+break;
+case 16:
 			this.$ = {
 				args: {},
 			};
 		
 break;
-case 16:
+case 17:
 			this.$ = $$[$0];
 			this.$.args[$$[$0-1]] = true;
 		
 break;
-case 17:
+case 18:
 			this.$ = {
 				args: {},
 			};
 		
 break;
-case 18:
+case 19:
 			this.$ = {
 				targets: $$[$0],
 			};
 		
 break;
-case 19:
+case 20:
 			this.$ = {};
 		
 break;
-case 20:
+case 21:
 			this.$ = $$[$0];
 			this.$.push({
 				pattern: $$[$0-2],
@@ -567,30 +637,30 @@ case 20:
 			});
 		
 break;
-case 21:
+case 22:
 			this.$ = $$[$0];
 		
 break;
-case 22:
+case 23:
 			this.$ = {};
 		
 break;
-case 23:
+case 24:
 			this.$ = $$[$0];
 			this.$[$$[$0-1]] = true;
 		
 break;
-case 24:
+case 25:
 			this.$ = {};
 		
 break;
-case 26:
+case 27:
 			this.$ = [];
 		
 break;
 }
 },
-table: [{3:1,4:2,6:3,8:[1,4]},{1:[3]},{5:[1,5]},{4:7,5:[2,4],6:3,7:6,8:[1,4]},{5:[2,7],8:[2,7],9:8,11:[1,9],16:[2,7]},{1:[2,1]},{5:[2,2]},{5:[2,3]},{5:[2,12],8:[2,12],10:10,14:11,15:12,16:[1,13]},{5:[2,9],8:[2,9],12:14,13:[1,15],16:[2,9]},{5:[2,5],8:[2,5]},{5:[2,11],8:[2,11]},{5:[2,12],8:[2,12],10:16,14:11,15:12,16:[1,13]},{5:[2,15],8:[2,15],11:[1,18],16:[2,15],17:17,27:[2,15]},{5:[2,6],8:[2,6],16:[2,6]},{5:[2,9],8:[2,9],12:19,13:[1,15],16:[2,9]},{5:[2,10],8:[2,10]},{5:[2,19],8:[2,19],16:[2,19],18:20,21:21,22:22,27:[1,23]},{5:[2,17],8:[2,17],16:[2,17],19:24,20:[1,25],27:[2,17]},{5:[2,8],8:[2,8],16:[2,8]},{5:[2,13],8:[2,13],16:[2,13]},{5:[2,18],8:[2,18],16:[2,18]},{5:[2,22],8:[2,22],11:[1,27],16:[2,22],23:26,27:[2,22]},{5:[2,27],8:[2,27],11:[2,27],16:[2,27],27:[2,27]},{5:[2,14],8:[2,14],16:[2,14],27:[2,14]},{5:[2,17],8:[2,17],16:[2,17],19:28,20:[1,25],27:[2,17]},{5:[2,26],8:[2,26],16:[2,26],21:30,22:22,24:29,27:[1,23]},{5:[2,24],8:[2,24],16:[2,24],25:31,26:[1,32],27:[2,24]},{5:[2,16],8:[2,16],16:[2,16],27:[2,16]},{5:[2,20],8:[2,20],16:[2,20]},{5:[2,25],8:[2,25],16:[2,25]},{5:[2,21],8:[2,21],16:[2,21],27:[2,21]},{5:[2,24],8:[2,24],16:[2,24],25:33,26:[1,32],27:[2,24]},{5:[2,23],8:[2,23],16:[2,23],27:[2,23]}],
+table: [{3:1,4:2,6:3,8:[1,4]},{1:[3]},{5:[1,5]},{4:7,5:[2,4],6:3,7:6,8:[1,4]},{5:[2,7],8:[2,7],9:8,11:[1,9],16:[2,7],19:[2,7]},{1:[2,1]},{5:[2,2]},{5:[2,3]},{5:[2,12],8:[2,12],10:10,14:11,15:12,16:[1,13],19:[1,14]},{5:[2,9],8:[2,9],12:15,13:[1,16],16:[2,9],19:[2,9]},{5:[2,5],8:[2,5]},{5:[2,11],8:[2,11]},{5:[2,12],8:[2,12],10:17,14:11,15:12,16:[1,13],19:[1,14]},{5:[2,16],8:[2,16],11:[1,19],16:[2,16],17:18,19:[2,16],28:[2,16]},{5:[2,14],8:[2,14],16:[2,14],19:[2,14]},{5:[2,6],8:[2,6],16:[2,6],19:[2,6]},{5:[2,9],8:[2,9],12:20,13:[1,16],16:[2,9],19:[2,9]},{5:[2,10],8:[2,10]},{5:[2,20],8:[2,20],16:[2,20],18:21,19:[2,20],22:22,23:23,28:[1,24]},{5:[2,18],8:[2,18],16:[2,18],19:[2,18],20:25,21:[1,26],28:[2,18]},{5:[2,8],8:[2,8],16:[2,8],19:[2,8]},{5:[2,13],8:[2,13],16:[2,13],19:[2,13]},{5:[2,19],8:[2,19],16:[2,19],19:[2,19]},{5:[2,23],8:[2,23],11:[1,28],16:[2,23],19:[2,23],24:27,28:[2,23]},{5:[2,28],8:[2,28],11:[2,28],16:[2,28],19:[2,28],28:[2,28]},{5:[2,15],8:[2,15],16:[2,15],19:[2,15],28:[2,15]},{5:[2,18],8:[2,18],16:[2,18],19:[2,18],20:29,21:[1,26],28:[2,18]},{5:[2,27],8:[2,27],16:[2,27],19:[2,27],22:31,23:23,25:30,28:[1,24]},{5:[2,25],8:[2,25],16:[2,25],19:[2,25],26:32,27:[1,33],28:[2,25]},{5:[2,17],8:[2,17],16:[2,17],19:[2,17],28:[2,17]},{5:[2,21],8:[2,21],16:[2,21],19:[2,21]},{5:[2,26],8:[2,26],16:[2,26],19:[2,26]},{5:[2,22],8:[2,22],16:[2,22],19:[2,22],28:[2,22]},{5:[2,25],8:[2,25],16:[2,25],19:[2,25],26:34,27:[1,33],28:[2,25]},{5:[2,24],8:[2,24],16:[2,24],19:[2,24],28:[2,24]}],
 defaultActions: {5:[2,1],6:[2,2],7:[2,3]},
 parseError: function parseError(str, hash) {
     throw new Error(str);
@@ -704,57 +774,77 @@ parse: function parse(input) {
 function genRegex(pattern) {
 	return new RegExp('^'
 		+pattern
-			.replace(/\./g, '\\.')
-			.replace(/\-/g, '\\-')
-			.replace(/\//g, '\\/')
-			.replace(/\(/g, '\\(')
-			.replace(/\)/g, '\\)')
-			.replace(/\+/g, '\\+')
-			.replace(/\{/g, '\\{')
-			.replace(/\}/g, '\\}')
-			.replace(/\*/g, '.*')
+			.replace(/(\[\.\-\/\(\)\+\{\}])/g, '\\$1')
+			.replace(/[\*]/g, '.*')
 		+'$', 'i');
 }
 
 function develop(rules) {
-	var compiledRules = [];
+	var linkedRules = [];
 	for(var e in rules) {
-		compiledRules.push({
+		linkedRules.push({
 			regex: genRegex(e),
-			args: rules[e].args,
-			compile: constructUrlDef(e, rules[e].dirs)
+			exec: constructUrlDef(e, rules[e])
 		});
 	}
-	return compiledRules;
+	return linkedRules;
 }
 
 function constructUrlDef(url, def) {
-	return function() {
-		var order = Compilers.getOrder();
+	// this is the object itself that gets returned (a function)
+	var fn = function() {
 
-		for(var i=def.length-1; i>=0; i--) {
-			var sect = dirAction(def[i]);
+		// first, go through the handlers for each request rule
+		var args = def.args;
+		for(var i=0; i<args.length; i++) {
+			var arg = args[i];
+			var handler = Modules.getHandler(arg);
+
+			console.log('handler: ',handler);
+		}
+
+
+		// next go through compilers for the dir targets
+		var order = Modules.getCompilerOrder();
+
+		// iterate over every dir target and append the results of each sect to the string groups
+		var dirs = def.dirs;
+		for(var i=dirs.length-1; i>=0; i--) {
+			var sect = dirAction(dirs[i]);
+
+			// error handling
+			if(sect.error) {
+				return sect;
+			}
+
 			for(var s in sect) {
 				order[s] += sect[s];
 			}
 		}
 
+		// build the strings for each section
 		var b = '';
 		for(var e in order) {
 			b += order[e];
 		}
 		return b;
 	};
+
+	// store a reference to the original object
+	fn.def = def;
+
+	// return the detailed object
+	return fn;
 }
 
 function dirAction(action) {
 	var alias = action.dir;
-	var spec = Compilers.get(alias);
+	var spec = Modules.getCompiler(alias);
 	if(!spec) {
 		console.error('alias not found: ',alias);
 		return {};
 	}
-	return spec.compile(global, action);
+	return spec(global, action);
 }
 
 /* Jison generated lexer */
@@ -930,66 +1020,68 @@ lexer.performAction = function anonymous(yy,yy_,$avoiding_name_collisions,YY_STA
 
 var YYSTATE=YY_START
 switch($avoiding_name_collisions) {
-case 0: return 8; 
+case 0: return 19; 
 break;
-case 1: this.begin('dir'); 
+case 1: return 8; 
 break;
-case 2: 
+case 2: this.begin('dir'); 
 break;
-case 3: this.begin('reqSpec'); return yy_.yytext; 
+case 3: 
 break;
-case 4: return 13; 
+case 4: this.begin('reqSpec'); return yy_.yytext; 
 break;
-case 5: this.popState(); this.begin('dir'); 
+case 5: return 13; 
 break;
-case 6: this.popState(); 
+case 6: this.popState(); this.begin('dir'); 
 break;
-case 7: return 16; 
+case 7: this.popState(); 
 break;
-case 8: this.begin('file'); 
+case 8: return 16; 
 break;
-case 9: 
+case 9: this.begin('file'); 
 break;
-case 10: this.popState(); 
+case 10: 
 break;
-case 11: this.begin('dirSpec'); return yy_.yytext; 
+case 11: this.popState(); 
 break;
-case 12: return 20; 
+case 12: this.begin('dirSpec'); return yy_.yytext; 
 break;
-case 13: this.popState(); this.begin('file'); 
+case 13: return 21; 
 break;
-case 14: this.popState(); 
+case 14: this.popState(); this.begin('file'); 
 break;
-case 15: this.popState(); this.popState(); 
+case 15: this.popState(); 
 break;
-case 16: return 27; 
+case 16: this.popState(); this.popState(); 
 break;
-case 17: 
+case 17: return 28; 
 break;
-case 18: this.popState(); 
+case 18: 
 break;
-case 19: this.popState(); this.popState(); 
+case 19: this.popState(); 
 break;
-case 20: this.begin('fileSpec'); return yy_.yytext; 
+case 20: this.popState(); this.popState(); 
 break;
-case 21: return 26; 
+case 21: this.begin('fileSpec'); return yy_.yytext; 
 break;
-case 22: this.popState(); 
+case 22: return 27; 
 break;
-case 23: this.popState(); this.popState(); 
+case 23: this.popState(); 
 break;
-case 24: this.popState(); this.popState(); this.popState(); 
+case 24: this.popState(); this.popState(); 
 break;
-case 25:  
+case 25: this.popState(); this.popState(); this.popState(); 
 break;
-case 26: return yy_.yytext; 
+case 26:  
 break;
-case 27: return 5; 
+case 27: return yy_.yytext; 
+break;
+case 28: return 5; 
 break;
 }
 };
-lexer.rules = [/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([ ])+)/,/^(?:.)/,/^(?:$)/];
-lexer.conditions = {"reqSpec":{"rules":[4,5,6,25,26,27],"inclusive":true},"dir":{"rules":[7,8,9,10,11,25,26,27],"inclusive":true},"dirSpec":{"rules":[12,13,14,15,25,26,27],"inclusive":true},"file":{"rules":[16,17,18,19,20,25,26,27],"inclusive":true},"fileSpec":{"rules":[21,22,23,24,25,26,27],"inclusive":true},"INITIAL":{"rules":[0,1,2,3,25,26,27],"inclusive":true}};
+lexer.rules = [/^(?:([\/][\-]+[ ]+))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?::)/,/^(?:([^ \t\r\n:]+))/,/^(?:(\r?\n\t[\t]))/,/^(?:(\r?\n[\t]))/,/^(?:(\r?[\n]))/,/^(?:([ ])+)/,/^(?:.)/,/^(?:$)/];
+lexer.conditions = {"reqSpec":{"rules":[0,5,6,7,26,27,28],"inclusive":true},"dir":{"rules":[0,8,9,10,11,12,26,27,28],"inclusive":true},"dirSpec":{"rules":[0,13,14,15,16,26,27,28],"inclusive":true},"file":{"rules":[0,17,18,19,20,21,26,27,28],"inclusive":true},"fileSpec":{"rules":[0,22,23,24,25,26,27,28],"inclusive":true},"INITIAL":{"rules":[0,1,2,3,4,26,27,28],"inclusive":true}};
 return lexer;})()
 parser.lexer = lexer;
 function Parser () { this.yy = {}; }Parser.prototype = parser;parser.Parser = Parser;
@@ -1054,9 +1146,9 @@ if (typeof module !== 'undefined' && require.main === module) {
 			};
 
 			operator['getRules'] = function() {
-				if(!manifestFilename) return pcs.warn('no manifest file given');
+				if(!manifestFilename) return expose.warn('no manifest file given');
 				var stat = fs.statSync(manifestFilename);
-				if(!stat) return pcs.error('failed to get stat for manifest file: `',manifestFilename,'`');
+				if(!stat) return expose.error('failed to get stat for manifest file: `',manifestFilename,'`');
 				if(stat.mtime.getTime() != manifestMTime) {
 					manifestMTime = stat.mtime.getTime();
 					var data = fs.readFileSync(manifestFilename)+'';
@@ -1080,7 +1172,7 @@ if (typeof module !== 'undefined' && require.main === module) {
 	/**
 	* public static operator() ()
 	**/
-	var pcs = namespace[__func__] = function() {
+	var expose = namespace[__func__] = function() {
 		if(this !== namespace) {
 			instance = construct.apply(this, arguments);
 			return instance;
@@ -1097,19 +1189,19 @@ if (typeof module !== 'undefined' && require.main === module) {
 	**/
 		
 		//
-		pcs['toString'] = function() {
+		expose['toString'] = function() {
 			return __func__+'()';
 		};
 		
 		//
-		pcs['error'] = function() {
+		expose['error'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.error.apply(console, args);
 		};
 		
 		//
-		pcs['warn'] = function() {
+		expose['warn'] = function() {
 			var args = Array.cast(arguments);
 			args.unshift(__func__+':');
 			console.warn.apply(console, args);
@@ -1175,7 +1267,7 @@ if (typeof module !== 'undefined' && require.main === module) {
 						fs.mkdirSync(outdir);
 					}
 
-					fs.writeFileSync(outdir+'/'+file, rule.compile(), 'utf-8');
+					fs.writeFileSync(outdir+'/'+file, rule.exec(), 'utf-8');
 
 				}
 				break;
