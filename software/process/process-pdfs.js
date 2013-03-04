@@ -2,6 +2,12 @@
 // require filesystem
 var fs = require('fs');
 
+// require child_process::exec
+var child_process = require('child_process');
+
+// require GraphicsMagik
+var gm = require('gm');
+
 var root ='/Users/blake/dev/poster-flipper';
 
 var DPI = 300;
@@ -16,11 +22,35 @@ var SUB = {
 	thumb: 'thumb',
 };
 
+var THUMBNAIL = {
+	width: 211,
+	height: 160,
+};
+
+// reference tools directory
+var toolsDir;
+(function() {
+	var cwd = process.cwd();
+	process.chdir('../tools');
+	toolsDir = process.cwd();
+	process.chdir(cwd);
+})();
+
 processPDFs(root+'/remote/convertable');
 assureDirectoriesExist(
 	REMOTE.archive,
 	REMOTE.data
 	);
+
+
+function execTool(cmd) {
+	var cwd = process.cwd();
+	process.chdir(toolsDir);
+	child_process.exec(cmd);
+	console.log(process.cwd()+'$ '+cmd);
+	process.chdir(cwd);
+	process.exit(1);
+};
 
 // process and convert PDFs
 function processPDFs(dir, relPath) {
@@ -69,14 +99,19 @@ function processPDFs(dir, relPath) {
 			// prepare the path for the output file
 			var outPath = REMOTE.data+'/'+SUB.full+subPath+'/'+file+'.jpg';
 
-			var exec = 'gswin32c.exe -dNOPAUSE -dBATCH -sDEVICE=jpeg '
+			// use ghost-script program to convert pdf to jpeg
+			var cmd = 'gswin32c.exe -dNOPAUSE -dBATCH -sDEVICE=jpeg '
 				+'-r'+DPI+' '
 				+'"-sOutputFile='+outPath+'" '
 				+'"'+dir+'/'+file+'"';
 
-			console.log('$ '+exec);
-		}
+			// shell execute command
+			execTool(cmd);
 
+			// generate a thumbnail verison of the image
+			gm(outPath)
+				.resize(THUMBNAIL.width, THUMBNAIL.height);
+		}
 
 	}
 
