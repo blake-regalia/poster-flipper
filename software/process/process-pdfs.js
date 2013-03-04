@@ -12,7 +12,7 @@ var gm = require('gm');
 var node_path = require('path');
 
 // acquire config settings
-var config = require('../../config.js');
+var config = require('../../config.js').config;
 
 var	JPEG = config.JPEG,
 	LOCAL = config.LOCAL,
@@ -110,11 +110,16 @@ function processPDFs(dir, relPath) {
 			execTool(cmd, function() {
 
 				// generate a thumbnail verison of the image
+				// gm(THUMBNAIL.width, THUMBNAIL.height, '#000000')
+				var thumbFile = REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg';
 				gm(outPath)
-					.resize(THUMBNAIL.width, THUMBNAIL.height)
-					.write(REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg', function(err) {
-						if(err) console.err('failed to generate thumbnail: '+err);
-					});
+					.thumb(THUMBNAIL.width, THUMBNAIL.height, thumbFile, 100, function(err) {
+						if(err) console.err('failed to generate thubnail: '+err);
+					})
+					// .resize(THUMBNAIL.width, THUMBNAIL.height)
+					// .write(, function(err) {
+					// 	if(err) console.error('failed to generate thumbnail: '+err);
+					// });
 			});
 		}
 
