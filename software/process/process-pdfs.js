@@ -113,13 +113,14 @@ function processPDFs(dir, relPath) {
 				// gm(THUMBNAIL.width, THUMBNAIL.height, '#000000')
 				var thumbFile = REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg';
 				gm(outPath)
-					.thumb(THUMBNAIL.width, THUMBNAIL.height, thumbFile, 100, function(err) {
-						if(err) console.err('failed to generate thubnail: '+err);
-					})
-					// .resize(THUMBNAIL.width, THUMBNAIL.height)
-					// .write(, function(err) {
-					// 	if(err) console.error('failed to generate thumbnail: '+err);
-					// });
+					// .thumb(THUMBNAIL.width, THUMBNAIL.height, thumbFile, 100, function(err) {
+					// 	if(err) console.err('failed to generate thubnail: '+err);
+					// })
+					.resize(THUMBNAIL.width, THUMBNAIL.height)
+					.geometry(THUMBNAIL.width, THUMBNAIL.height)
+					.write(thumbFile, function(err) {
+						if(err) console.error('failed to generate thumbnail: '+err);
+					});
 			});
 		}
 
