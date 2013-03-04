@@ -8,24 +8,15 @@ var child_process = require('child_process');
 // require GraphicsMagik
 var gm = require('gm');
 
-var root ='/Users/blake/dev/poster-flipper';
+// acquire config settings
+var config = require('../../config.js');
 
-var DPI = 300;
-var LOCAL = {};
-var REMOTE = {
-	archive: root+'/remote/archive',
-	data: root+'/remote/data',
-};
+var	JPEG = config.JPEG,
+	LOCAL = config.LOCAL,
+	REMOTE = config.REMOTE,
+	SUB = config.SUB,
+	THUMBNAIL = config.THUMBNAIL;
 
-var SUB = {
-	full: 'full',
-	thumb: 'thumb',
-};
-
-var THUMBNAIL = {
-	width: 211,
-	height: 160,
-};
 
 // reference tools directory
 var toolsDir;
@@ -43,13 +34,18 @@ assureDirectoriesExist(
 	);
 
 
-function execTool(cmd) {
+// runs an executable tool
+function execTool(cmd, fn) {
 	var cwd = process.cwd();
 	process.chdir(toolsDir);
-	child_process.exec(cmd);
-	console.log(process.cwd()+'$ '+cmd);
+	child_process.exec(cmd, function (error, stdout, stderr) {
+	    if(error !== null) {
+	      console.error('exec error: ' + error);
+	    }
+	    fn();
+	});
+	console.log('$ '+cmd);
 	process.chdir(cwd);
-	process.exit(1);
 };
 
 // process and convert PDFs
@@ -101,16 +97,20 @@ function processPDFs(dir, relPath) {
 
 			// use ghost-script program to convert pdf to jpeg
 			var cmd = 'gswin32c.exe -dNOPAUSE -dBATCH -sDEVICE=jpeg '
-				+'-r'+DPI+' '
+				+'-r'+JPEG.dpi+' '
 				+'"-sOutputFile='+outPath+'" '
 				+'"'+dir+'/'+file+'"';
 
 			// shell execute command
-			execTool(cmd);
+			execTool(cmd, function() {
 
-			// generate a thumbnail verison of the image
-			gm(outPath)
-				.resize(THUMBNAIL.width, THUMBNAIL.height);
+				// generate a thumbnail verison of the image
+				gm(outPath)
+					.resize(THUMBNAIL.width, THUMBNAIL.height)
+					.write(REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg', function(err) {
+						if(err) console.err('failed to generate thumbnail: '+err);
+					});
+			});
 		}
 
 	}
