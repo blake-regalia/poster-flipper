@@ -8,6 +8,9 @@ var child_process = require('child_process');
 // require GraphicsMagik
 var gm = require('gm');
 
+// require node's path
+var node_path = require('path');
+
 // acquire config settings
 var config = require('../../config.js');
 
@@ -27,7 +30,9 @@ var toolsDir;
 	process.chdir(cwd);
 })();
 
-processPDFs(root+'/remote/convertable');
+processPDFs(
+	node_path.resolve('../../remote/convertable')
+);
 assureDirectoriesExist(
 	REMOTE.archive,
 	REMOTE.data

@@ -1,5 +1,5 @@
 
-var root = 'C:/PosterFlipper/remote';
+var root = 'C:/PosterFlipper/poster-flipper/remote';
 
 exports.config = {
 
