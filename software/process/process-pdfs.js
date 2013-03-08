@@ -5,6 +5,9 @@ var fs = require('fs');
 // require child_process::exec
 var child_process = require('child_process');
 
+// require asyncblock
+var asyncblock = require('asyncblock');
+
 // require GraphicsMagik
 var gm = require('gm');
 
@@ -30,27 +33,31 @@ var toolsDir;
 	process.chdir(cwd);
 })();
 
-processPDFs(
-	node_path.resolve('../../remote/convertable')
-);
 assureDirectoriesExist(
 	REMOTE.archive,
-	REMOTE.data
+	REMOTE.data,
+	REMOTE.data+'/'+SUB.full,
+	REMOTE.data+'/'+SUB.thumb
 	);
-
+processPDFs(
+	REMOTE.source
+);
 
 // runs an executable tool
 function execTool(cmd, fn) {
 	var cwd = process.cwd();
 	process.chdir(toolsDir);
-	child_process.exec(cmd, function (error, stdout, stderr) {
-	    if(error !== null) {
-	      console.error('exec error: ' + error);
-	    }
-	    fn();
+	asyncblock(function(flow) {
+		console.log('$ '+cmd);
+		child_process.exec(cmd, flow.add());
+		var result = flow.wait();
+		process.chdir(cwd);
+	}, function (error, stdout, stderr) {
+		if(error !== null) {
+		  console.error('exec error: ' + error);
+		}
+		fn();
 	});
-	console.log('$ '+cmd);
-	process.chdir(cwd);
 };
 
 // process and convert PDFs
@@ -110,12 +117,8 @@ function processPDFs(dir, relPath) {
 			execTool(cmd, function() {
 
 				// generate a thumbnail verison of the image
-				// gm(THUMBNAIL.width, THUMBNAIL.height, '#000000')
 				var thumbFile = REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg';
 				gm(outPath)
-					// .thumb(THUMBNAIL.width, THUMBNAIL.height, thumbFile, 100, function(err) {
-					// 	if(err) console.err('failed to generate thubnail: '+err);
-					// })
 					.resize(THUMBNAIL.width, THUMBNAIL.height)
 					.geometry(THUMBNAIL.width, THUMBNAIL.height)
 					.write(thumbFile, function(err) {
@@ -132,7 +135,7 @@ function processPDFs(dir, relPath) {
 
 // checks to make sure given directories exist, creates them otherwise
 function assureDirectoriesExist() {
-	for(var i=arguments.length-1; i>=0; i--) {
+	for(var i=0; i<arguments.length; i++) {
 		var target = arguments[i];
 		if(!fs.existsSync(target)) {
 			fs.mkdirSync(target, 777);

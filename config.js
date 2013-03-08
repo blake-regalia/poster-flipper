@@ -1,13 +1,16 @@
 
-var root = 'C:/PosterFlipper/poster-flipper/remote';
+var root = 'D:/HTTP/remote/phys/poster-flipper/remote';
 
 exports.config = {
 
-	LOCAL: {},
+	LOCAL: {
+		data: 'D:/HTTP/remote/phys/poster-flipper/Poster Data',
+	},
 
 	REMOTE: {
-		archive: root+'/archive',
-		data: root+'/data',
+		archive: root+'/Poster Archive',
+		data: root+'/Poster Data',
+		source: root+'/Approved Posters',
 	},
 	
 	JPEG: {
