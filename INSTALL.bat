@@ -10,20 +10,21 @@ if errorlevel 1 (
 @echo on
 set curr_dir=%cd%
 
-chdir /D software
+chdir software
 
-chdir /D http
+chdir http
 rmdir node_modules /s /q
 call npm install express
 
-chdir /D ..\
-chdir /D process
+chdir ..\
+chdir process
 rmdir node_modules /s /q
 call npm install gm
 call npm install asyncblock
+call npm install ffi
 
-chdir /D ..\
-chdir /D index
+chdir ..\
+chdir index
 call build.bat
 
-chdir /D %curr_dir%
+chdir %curr_dir%

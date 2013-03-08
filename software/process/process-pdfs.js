@@ -5,9 +5,6 @@ var fs = require('fs');
 // require child_process::exec
 var child_process = require('child_process');
 
-// require asyncblock
-var asyncblock = require('asyncblock');
-
 // require GraphicsMagik
 var gm = require('gm');
 
@@ -15,7 +12,7 @@ var gm = require('gm');
 var node_path = require('path');
 
 // acquire config settings
-var config = require('../../config.js').config;
+var config = require('../config.js').config;
 
 var	JPEG = config.JPEG,
 	LOCAL = config.LOCAL,
@@ -33,6 +30,10 @@ var toolsDir;
 	process.chdir(cwd);
 })();
 
+
+var commandQueue = [];
+var functionQueue = [];
+
 assureDirectoriesExist(
 	REMOTE.archive,
 	REMOTE.data,
@@ -43,22 +44,9 @@ processPDFs(
 	REMOTE.source
 );
 
-// runs an executable tool
-function execTool(cmd, fn) {
-	var cwd = process.cwd();
-	process.chdir(toolsDir);
-	asyncblock(function(flow) {
-		console.log('$ '+cmd);
-		child_process.exec(cmd, flow.add());
-		var result = flow.wait();
-		process.chdir(cwd);
-	}, function (error, stdout, stderr) {
-		if(error !== null) {
-		  console.error('exec error: ' + error);
-		}
-		fn();
-	});
-};
+processCommandQueue();
+
+
 
 // process and convert PDFs
 function processPDFs(dir, relPath) {
@@ -67,7 +55,6 @@ function processPDFs(dir, relPath) {
 	// push cwd
 	var cwd = process.cwd();
 
-	console.log('$ chdir('+dir+');');
 	// change dirs onto this path
 	process.chdir(dir);
 
@@ -75,6 +62,9 @@ function processPDFs(dir, relPath) {
 	var files = fs.readdirSync('.');
 	for(var i=files.length-1; i>=0; i--) {
 		var file = files[i];
+		
+		process.chdir(dir);
+		
 		var stats = fs.statSync(file);
 		var subPath = process.cwd().substr(relPath.length);
 
@@ -108,23 +98,33 @@ function processPDFs(dir, relPath) {
 			var outPath = REMOTE.data+'/'+SUB.full+subPath+'/'+file+'.jpg';
 
 			// use ghost-script program to convert pdf to jpeg
-			var cmd = 'gswin32c.exe -dNOPAUSE -dBATCH -sDEVICE=jpeg '
+			var cmd = ['gswin32c.exe -dNOPAUSE -dBATCH -sDEVICE=jpeg '
 				+'-r'+JPEG.dpi+' '
 				+'"-sOutputFile='+outPath+'" '
-				+'"'+dir+'/'+file+'"';
-
-			// shell execute command
-			execTool(cmd, function() {
-
+				+'"'+dir+'/'+file+'"', subPath+'/'+file];
+			
+			commandQueue.push(cmd);
+			functionQueue.push((function() {
 				// generate a thumbnail verison of the image
-				var thumbFile = REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg';
-				gm(outPath)
-					.resize(THUMBNAIL.width, THUMBNAIL.height)
-					.geometry(THUMBNAIL.width, THUMBNAIL.height)
-					.write(thumbFile, function(err) {
-						if(err) console.error('failed to generate thumbnail: '+err);
-					});
-			});
+				var source = this.source;
+				var archiveDest = this.archiveDest;
+				var thumbFile = this.thumbFile;
+				return function(fn) {
+					gm(outPath)
+						.resize(THUMBNAIL.width, THUMBNAIL.height)
+						.geometry(THUMBNAIL.width, THUMBNAIL.height)
+						.write(thumbFile, function(err) {
+							if(err) console.error('failed to generate thumbnail: '+err);
+							copyFile(source, archiveDest, function() {
+								fs.unlink(source, fn);
+							});
+						});
+				};
+			}).apply({
+				source: dir+'/'+file,
+				archiveDest: REMOTE.archive+subPath+'/'+file,
+				thumbFile: REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg'
+			}));
 		}
 
 	}
@@ -133,12 +133,73 @@ function processPDFs(dir, relPath) {
 	process.chdir(cwd);
 }
 
+function processCommandQueue() {
+	if(!commandQueue.length) {
+		processFunctionQueue();
+	}
+	else {
+		var cmd = commandQueue.shift();
+		var cwd = process.cwd();
+		process.chdir(toolsDir);
+		console.log('$ '+cmd[1]);
+		child_process.exec(cmd[0], function(err) {
+			if(err) {
+				console.error(err);
+				process.exit(1);
+			}
+			else {
+				processCommandQueue();
+			}
+		});
+		process.chdir(cwd);
+	}
+};
+
+function processFunctionQueue() {
+	if(!functionQueue.length) {
+		return;
+	}
+	else {
+		var fn = functionQueue.shift();
+		fn(function() {
+			processFunctionQueue();
+		});
+	}
+};
+
 // checks to make sure given directories exist, creates them otherwise
 function assureDirectoriesExist() {
 	for(var i=0; i<arguments.length; i++) {
 		var target = arguments[i];
 		if(!fs.existsSync(target)) {
 			fs.mkdirSync(target, 777);
+		}
+	}
+}
+
+
+
+// copies file
+function copyFile(source, target, cb) {
+	var cbCalled = false;
+
+	var rd = fs.createReadStream(source);
+		rd.on("error", function(err) {
+		done(err);
+	});
+	var wr = fs.createWriteStream(target);
+		wr.on("error", function(err) {
+		done(err);
+	});
+	wr.on("close", function(ex) {
+		done();
+	});
+	rd.pipe(wr);
+
+	function done(err) {
+		if(!cbCalled) {
+			cb(err);
+			cbCalled = true;
 		}
 	}
 }
