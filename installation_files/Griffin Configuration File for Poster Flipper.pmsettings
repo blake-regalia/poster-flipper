@@ -1,0 +1,42 @@
+<PowerMateDoc>
+  <device name="PowerMate 1">
+    <settings>
+      <lastpath>\\?\hid#vid_077d&amp;pid_0410#6&amp;e1c8bde&amp;0&amp;0000#{4d1e55b2-f16f-11cf-88cb-001111000030}</lastpath>
+      <pulse>True</pulse>
+      <pulseRate>8</pulseRate>
+      <globalOnly>True</globalOnly>
+    </settings>
+    <app name="Global Setting">
+      <action pmaction="ClockwiseRotate" caction="Scroll Down" plugin="Scrolling">
+        <settings>
+          <sensitivity>3</sensitivity>
+        </settings>
+      </action>
+      <action pmaction="CounterClockwiseRotate" caction="Scroll Up" plugin="Scrolling">
+        <settings>
+          <sensitivity>3</sensitivity>
+        </settings>
+      </action>
+      <action pmaction="Click" caction="Send Keys" plugin="Send Keys">
+        <panel>
+          <string>Space</string>
+        </panel>
+      </action>
+      <action pmaction="ClickClockwiseRotate" caction="Send Keys" plugin="Send Keys">
+        <panel>
+          <string>Up</string>
+        </panel>
+      </action>
+      <action pmaction="ClickCounterClockwiseRotate" caction="Send Keys" plugin="Send Keys">
+        <panel>
+          <string>Down</string>
+        </panel>
+      </action>
+      <action pmaction="TimedClick" caction="Send Keys" plugin="Send Keys">
+        <panel>
+          <string>Space</string>
+        </panel>
+      </action>
+    </app>
+  </device>
+</PowerMateDoc>
