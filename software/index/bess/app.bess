@@ -27,6 +27,7 @@ main {
 			height: auto;
 			
 			transition: all $transitionTime ease-in-out;
+			-webkit-transition: all $transitionTime ease-in-out;
 			
 			user-select: none;
 		}
@@ -46,6 +47,7 @@ scroll / #scroll {
 	background-color: brown;
 	
 	transition: all 1s ease-out;
+	-webkit-transition: all 1s ease-out;
 	
 	/ .hidden {
 		bottom: -180px;
@@ -67,6 +69,7 @@ scroll / #scroll {
 		bottom: 0;
 		
 		transition: all $transitionTime cubic-bezier(0,.43,.52,1);
+		-webkit-transition: all $transitionTime cubic-bezier(0,.43,.52,1);
 	}
 	
 	title / >#title {
@@ -86,6 +89,7 @@ scroll / #scroll {
 		font-family: verdana;
 		
 		transition: all 1.2s ease-out;
+		-webkit-transition: all 1.2s ease-out;
 		
 		/ .hide {
 			transform: translateY(100%);
@@ -110,6 +114,7 @@ thumbnail {
 		
 		vertical-align: top;
 		transition: all $transitionTime cubic-bezier(0, .43, .53, 1);
+		-webkit-transition: all $transitionTime cubic-bezier(0, .43, .53, 1);
 		
 		text-align: center;
 		
@@ -184,6 +189,7 @@ overlay {
 	
 	/ .fadeable {
 		transition: all 1s ease-in-out;
+		-webkit-transition: all 1s ease-in-out;
 	}
 
 	/ .mode {
