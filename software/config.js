@@ -1,10 +1,10 @@
 
-var root = 'D:/HTTP/remote/phys/poster-flipper/remote';
+var root = 'Q:/Posters';
 
 exports.config = {
 
 	LOCAL: {
-		data: 'D:/HTTP/remote/phys/poster-flipper/Poster Data',
+		data: '../../Poster Data',
 	},
 
 	REMOTE: {
