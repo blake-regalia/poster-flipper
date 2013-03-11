@@ -35,6 +35,7 @@ chdir scripts
 copy /A /Y "Convert Approved Posters.bat" "..\..\Convert Approved Posters.bat"
 copy /A /Y "Update Poster Data.bat" "..\..\Update Poster Data.bat"
 copy /A /Y "Open Poster Viewer.bat" "..\..\Open Poster Viewer.bat"
+copy /A /Y "Start Host Server.bat" "..\..\Start Host Server.bat"
 
 chdir %curr_dir%
 
