@@ -13,6 +13,8 @@ var	JPEG = config.JPEG,
 	REMOTE = config.REMOTE,
 	SUB = config.SUB,
 	THUMBNAIL = config.THUMBNAIL;
+	
+var localData = node_path.resolve(LOCAL.data);
 
 // hash of files we've accounted for
 var history = {};
@@ -24,7 +26,9 @@ function updateDir(sub) {
 	var cwd = process.cwd();
 	process.chdir(REMOTE.data+sub);
 	
-	assureDirectoriesExist(LOCAL.data+sub);
+	assureDirectoriesExist(
+		localData+sub
+		);
 	
 	var files = fs.readdirSync('.');
 	for(var i=files.length-1; i>=0; i--) {
@@ -40,7 +44,7 @@ function updateDir(sub) {
 		// copy file from source to dest
 		else {
 			var copy = true;
-			var localPath = path.resolve(LOCAL.data+path);
+			var localPath = localData+path;
 			try {
 				if(fs.existsSync(localPath)) {
 					history[localPath] = true;
@@ -62,12 +66,15 @@ function updateDir(sub) {
 	}
 
 	// removes data
-	files = fs.readdirSync(LOCAL.data+sub);
+	files = fs.readdirSync(localData+sub);
 	for(var i=files.length-1; i>=0; i--) {
 		var file = files[i];
-		var localPath = LOCAL.data+sub+'/'+file;
-		if(!history[localPath]) {
-			fs.unlinkSync(localPath);
+		var stat = fs.statSync(file);
+		if(stat && !stat.isDirectory()) {
+			var localPath = localData+sub+'/'+file;
+			if(!history[localPath]) {
+				fs.unlinkSync(localPath);
+			}
 		}
 	}
 	
