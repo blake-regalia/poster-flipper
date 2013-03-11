@@ -1,5 +1,10 @@
+
+var config = require('../config.js').config;
+
+var LOCAL = config.LOCAL;
+
 // relative path to the poster file data
-var posterDataPath = '../../Poster File Data';
+var posterDataPath = LOCAL.data;
 
 // define server port
 var serverPort = 2225;
