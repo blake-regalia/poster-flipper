@@ -66,6 +66,7 @@ function updateDir(sub) {
 	}
 
 	// removes data
+	/*
 	files = fs.readdirSync(localData+sub);
 	for(var i=files.length-1; i>=0; i--) {
 		var file = files[i];
@@ -77,6 +78,7 @@ function updateDir(sub) {
 			}
 		}
 	}
+	*/
 	
 	process.chdir(cwd);
 };
