@@ -32,8 +32,11 @@
 			viewportHeight = $(window).height()
 		
 		var viewportCenter = $(document).width() * 0.5,
-			previewCenter = (CSS('thumbnail.block.$.panel.width').pixels() + CSS('thumbnail.padding-sides').pixels()) * 0.5,
-			thumbnailOuterWidth = CSS('thumbnail.block.$.panel.width').pixels() + 2*CSS('thumbnail.padding-sides').pixels();
+			thumbnailOuterWidth = CSS('thumbnail.block.width').pixels() + 2*CSS('thumbnail.padding-sides').pixels(),
+			previewCenter = (thumbnailOuterWidth * 0.5);
+			
+		console.log(viewportCenter);
+		console.log(previewCenter);
 		
 		var gen = function() {
 			var html = '';

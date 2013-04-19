@@ -121,7 +121,6 @@ thumbnail {
 		panel / .panel {
 			height: 160px;
 			top: -26pt;
-			width: (160 * $aspectRatio);
 			
 			/ .hidden {
 				height: $height;
