@@ -112,7 +112,7 @@
 			
 			// 
 			
-			operator['scroll'] = function(direction) {
+			operator['scroll'] = function(direction, roundabout) {
 				// don't let the title dissapear while we're scrolling through posters
 				clearTimeout(timeoutTitle);
 				$('#title').removeClass('hide');
@@ -125,7 +125,7 @@
 				
 				posterIndex += direction;
 				if(posterIndex >= thumbnail_length) {
-					if(infiniteCycle) {
+					if(infiniteCycle || roundabout) {
 						posterIndex = DF_POSTER_INDEX;
 					}
 					else {
@@ -134,7 +134,7 @@
 					}
 				}
 				else if(posterIndex < DF_POSTER_INDEX) {
-					if(infiniteCycle) {
+					if(infiniteCycle || roundabout) {
 						posterIndex = thumbnail_length-1;
 					}
 					else {

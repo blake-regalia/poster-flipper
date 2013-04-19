@@ -49,8 +49,12 @@
 					}, 1200);
 				}, 20);
 			},
+			
 		};
 		
+		var notify = function() {
+			Autonomous.wake();
+		};
 		
 		/**
 		* public operator() ();
@@ -63,8 +67,14 @@
 		/**
 		* public:
 		**/
-			operator[''] = function() {
-
+			operator['advance'] = function() {
+				modeIndex = 0;
+				captor = modes[modeIndex];
+				captor.open && captor.open();
+				captor.scroll(1, true);
+				setTimeout(function() {
+					captor.select();
+				}, 1200);
 			};
 		
 		
@@ -74,6 +84,7 @@
 		self.shiftMode();
 		
 		var wheelHandler = function(e) {
+			notify();
 			// console.log(e);
 			var wheelDelta = e.wheelDelta? e.wheelDelta: e.detail;
 			// console.log(wheelDelta);
@@ -89,6 +100,7 @@
 		$(document).bind('mousewheel', wheelHandler);
 		
 		$(document).bind('keydown', function(e) {
+			notify();
 			if(actionKeys.indexOf(e.keyCode || e.which) !== -1)  {
 				if(!captor.select()) {
 					self.shiftMode();

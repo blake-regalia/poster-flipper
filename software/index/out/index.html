@@ -3143,7 +3143,7 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 			
 			// 
 			
-			operator['scroll'] = function(direction) {
+			operator['scroll'] = function(direction, roundabout) {
 				// don't let the title dissapear while we're scrolling through posters
 				clearTimeout(timeoutTitle);
 				$('#title').removeClass('hide');
@@ -3156,7 +3156,7 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 				
 				posterIndex += direction;
 				if(posterIndex >= thumbnail_length) {
-					if(infiniteCycle) {
+					if(infiniteCycle || roundabout) {
 						posterIndex = DF_POSTER_INDEX;
 					}
 					else {
@@ -3165,7 +3165,7 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 					}
 				}
 				else if(posterIndex < DF_POSTER_INDEX) {
-					if(infiniteCycle) {
+					if(infiniteCycle || roundabout) {
 						posterIndex = thumbnail_length-1;
 					}
 					else {
@@ -3392,8 +3392,12 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 					}, 1200);
 				}, 20);
 			},
+			
 		};
 		
+		var notify = function() {
+			Autonomous.wake();
+		};
 		
 		/**
 		* public operator() ();
@@ -3406,8 +3410,14 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 		/**
 		* public:
 		**/
-			operator[''] = function() {
-
+			operator['advance'] = function() {
+				modeIndex = 0;
+				captor = modes[modeIndex];
+				captor.open && captor.open();
+				captor.scroll(1, true);
+				setTimeout(function() {
+					captor.select();
+				}, 1200);
 			};
 		
 		
@@ -3417,6 +3427,7 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 		self.shiftMode();
 		
 		var wheelHandler = function(e) {
+			notify();
 			// console.log(e);
 			var wheelDelta = e.wheelDelta? e.wheelDelta: e.detail;
 			// console.log(wheelDelta);
@@ -3432,6 +3443,7 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 		$(document).bind('mousewheel', wheelHandler);
 		
 		$(document).bind('keydown', function(e) {
+			notify();
 			if(actionKeys.indexOf(e.keyCode || e.which) !== -1)  {
 				if(!captor.select()) {
 					self.shiftMode();
@@ -3508,6 +3520,8 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 /************************
 ** doc.ready.js
 ************************/
+window.Config = {};
+
 $(document).ready(function() {
 	
 	/*
@@ -3532,16 +3546,95 @@ $(document).ready(function() {
 	
 	/**/
 	
-	$.getJSON('./server/get-posters.json', function(json) {
-		new Controls(
-			new Slider(json),
-			[ DOM_VK['SPACE'], DOM_VK['RETURN'] ],
-			[ new VerticalPan(), new HorizontalPan(), new Zoom() ]
-		);
-		/**/
+	
+	$.getJSON('./get/config.json', function(config) {
+		Config = config.config;
+		$.getJSON('./server/get-posters.json', function(json) {
+			new Controls(
+				new Slider(json),
+				[ DOM_VK['SPACE'], DOM_VK['RETURN'] ],
+				[ new VerticalPan(), new HorizontalPan(), new Zoom() ]
+			);
+			/**/
+		});
 	});
 	
 });
+
+/************************
+** mode.autonomous.js
+************************/
+/*!
+ * Author: Blake Regalia - blake.regalia@gmail.com
+ *
+ * Copyright 2012 Blake Regalia
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
+ */
+
+(function() {
+	
+	var __func__ = 'Autonomous';
+	
+	var idler;
+	var nexter;
+	var idling = false;
+	
+	var idleMode = function() {
+		if(!idling) return;
+		Controls().advance();
+		nexter = setTimeout(idleMode, Config.AUTONOMOUS_MODE.poster_duration_seconds*1000);
+	};
+	
+	/**
+	* public static operator() ()
+	**/
+	var expose = window[__func__] = function() {
+		if(this !== window) {
+			instance = construct.apply(this, arguments);
+			return instance;
+		}
+		else {
+			return instance;
+		}
+	};
+	
+	
+	
+	/**
+	* public static:
+	**/
+	expose['toString'] = function() {
+		return __func__+'()';
+	};
+		
+	//
+	expose['error'] = function() {
+		var args = Array.cast(arguments);
+		args.unshift(__func__+':');
+		console.error.apply(console, args);
+	};
+	
+	//
+	expose['warn'] = function() {
+		var args = Array.cast(arguments);
+		args.unshift(__func__+':');
+		console.warn.apply(console, args);
+	};
+	
+	expose['wake'] = function() {
+		console.log('wake');
+		idling = false;
+		clearTimeout(nexter);
+		clearTimeout(idler);
+		idler = setTimeout(function() {
+			idling = true;
+			idleMode();
+		}, Config.AUTONOMOUS_MODE.idle_timeout_seconds*1000);
+	};
+	
+})();
 
 /************************
 ** poster-transform.js

@@ -1,3 +1,5 @@
+window.Config = {};
+
 $(document).ready(function() {
 	
 	/*
@@ -22,13 +24,17 @@ $(document).ready(function() {
 	
 	/**/
 	
-	$.getJSON('./server/get-posters.json', function(json) {
-		new Controls(
-			new Slider(json),
-			[ DOM_VK['SPACE'], DOM_VK['RETURN'] ],
-			[ new VerticalPan(), new HorizontalPan(), new Zoom() ]
-		);
-		/**/
+	
+	$.getJSON('./get/config.json', function(config) {
+		Config = config.config;
+		$.getJSON('./server/get-posters.json', function(json) {
+			new Controls(
+				new Slider(json),
+				[ DOM_VK['SPACE'], DOM_VK['RETURN'] ],
+				[ new VerticalPan(), new HorizontalPan(), new Zoom() ]
+			);
+			/**/
+		});
 	});
 	
 });
