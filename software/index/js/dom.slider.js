@@ -91,7 +91,7 @@
 					width: '100%',
 					height: '100%',
 				},
-				swfPath: RESOURCE_PATH_JPLAYER,
+				swfPath: '/resource/',
 				solution: 'html,flash',
 				supplied: type,
 			};
@@ -231,9 +231,11 @@
 								}
 							})();
 							
+							console.log(fsrc);
+							
 							$('#video')
 								.jPlayer(
-									jPlayerConstructor(type, ABSOLUTE_ROOT_PATH+'/'+fsrc)
+									jPlayerConstructor(type, '/'+fsrc)
 								);
 							break;
 						}
