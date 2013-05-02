@@ -3192,8 +3192,9 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 				
 				timeoutScroll = setTimeout(function() {
 					operator.hidePanel();
-					
 				}, panelVisibleDuration);
+				
+				return (file && file.type) || true;
 			};
 			
 			//
@@ -3414,7 +3415,13 @@ CSS_SELECTOR_METHOD:"The methodName given in jPlayer('cssSelector') is not a val
 				modeIndex = 0;
 				captor = modes[modeIndex];
 				captor.open && captor.open();
-				captor.scroll(1, true);
+				while(true) {
+					var type = captor.scroll(1, true);
+					if(type) {
+						if(type=='image') break;
+						else if(type===true) captor.select();
+					}
+				}
 				setTimeout(function() {
 					captor.select();
 				}, 1200);

@@ -161,8 +161,9 @@
 				
 				timeoutScroll = setTimeout(function() {
 					operator.hidePanel();
-					
 				}, panelVisibleDuration);
+				
+				return (file && file.type) || true;
 			};
 			
 			//

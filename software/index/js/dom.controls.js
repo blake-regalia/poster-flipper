@@ -71,7 +71,13 @@
 				modeIndex = 0;
 				captor = modes[modeIndex];
 				captor.open && captor.open();
-				captor.scroll(1, true);
+				while(true) {
+					var type = captor.scroll(1, true);
+					if(type) {
+						if(type=='image') break;
+						else if(type===true) captor.select();
+					}
+				}
 				setTimeout(function() {
 					captor.select();
 				}, 1200);
