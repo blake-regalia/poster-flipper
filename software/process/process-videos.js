@@ -95,46 +95,36 @@ function processVids(dir, relPath) {
 		else if(/\.(mp4|ogv|webmv|webm|flv|mov)$/i.test(file)) {
 
 			// prepare the path for the output file
-			var outPath = REMOTE.data+'/'+SUB.full+subPath+'/'+file+'.jpg';
+			var thumbPath = REMOTE.data+'/'+SUB.thumb+subPath+'/'+file;
 			var input = dir+'/'+file;
 
-			var ss = getDuration(input) * 0.15; // get duration at 6%
+			// generate thumbnail
+			var ss = getDuration(input) * 0.15; // get duration at 15%
 			var cmd = ['"ffmpeg.exe" -i '
 				+input+' '
 				+'-an -y -f mjpeg '
 				+'-ss '+ss+' '
 				+'-s '+THUMBNAIL.width+'x'+THUMBNAIL.height+' '
 				+'-vframes 1 '
-				+outPath, subPath+'/'+files];
-
-
-			// use ghost-script program to convert pdf to jpeg
-			var cmd = ['gswin32c.exe -dNOPAUSE -dBATCH -sDEVICE=jpeg '
-				+'-r'+JPEG.dpi+' '
-				+'"-sOutputFile='+outPath+'" '
-				+'"'+dir+'/'+file+'"', subPath+'/'+file];
+				+thumbPath, subPath+'/'+file];
 			
 			commandQueue.push(cmd);
 			functionQueue.push((function() {
-				// generate a thumbnail verison of the image
+				// copy file to archive and move source to destination
 				var source = this.source;
 				var archiveDest = this.archiveDest;
 				var thumbFile = this.thumbFile;
 				return function(fn) {
-					gm(outPath)
-						.resize(THUMBNAIL.width, THUMBNAIL.height)
-						.geometry(THUMBNAIL.width, THUMBNAIL.height)
-						.write(thumbFile, function(err) {
-							if(err) console.error('failed to generate thumbnail: '+err);
-							copyFile(source, archiveDest, function() {
-								fs.unlink(source, fn);
-							});
+					copyFile(source, archiveDest, function() {
+						moveFile(source, archiveDest, function() {
+							
 						});
+					});
 				};
 			}).apply({
 				source: dir+'/'+file,
 				archiveDest: REMOTE.archive+subPath+'/'+file,
-				thumbFile: REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg'
+				fullFile: REMOTE.data+'/'+SUB.full+subPath+'/'+file
 			}));
 		}
 
@@ -212,21 +202,20 @@ function copyFile(source, target, cb) {
 		}
 	}
 }
+// moves file
+function moveFile(source, target, cb) {
+	fs.rename(source, target, cb);
+}
 
 function getDuration(file, fn) {
-	
-	// passthru($ffmpeg.' -i '.$file.' 2>&1');
-	// $duration = ob_get_contents();
-	// ob_end_clean();
+	child_process.exec($ffmpeg.' -i '.$file.' 2>&1', function(stdout) {
+		var duration = /Duration: (.*?)[.]/.exec(ignore, stdout);
 
-	// var search = '/Duration: (.*?)[.]/';
-	// var duration = preg_match($search, $duration, $matches, PREG_OFFSET_CAPTURE);
-	// duration = $matches[1][0];
-
-	// var times = preg_split('/[:]/', duration);
-	// var hours = times[0];
-	// var mins = times[1];
-	// var secs = times[2];
-	
-	// return $hours*60*60 + $mins*60 + $secs;
+		var times = duration[1].split(/[:]/g);
+		var hours = times[0];
+		var mins = times[1];
+		var secs = times[2];
+		
+		return hours*60*60 + mins*60 + secs;
+	});
 }

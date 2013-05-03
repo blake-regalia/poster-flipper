@@ -56,6 +56,8 @@ function processPDFs(dir, relPath) {
 	var cwd = process.cwd();
 
 	// change dirs onto this path
+	dir = node_path.resolve(dir);
+	console.log('chdir('+dir+')');
 	process.chdir(dir);
 
 	// scan the directory
@@ -66,6 +68,8 @@ function processPDFs(dir, relPath) {
 		process.chdir(dir);
 		
 		var stats = fs.statSync(file);
+		
+		relPath = node_path.resolve(relPath);
 		var subPath = process.cwd().substr(relPath.length);
 
 		// if this is a directory
@@ -107,10 +111,13 @@ function processPDFs(dir, relPath) {
 			functionQueue.push((function() {
 				// generate a thumbnail verison of the image
 				var source = this.source;
+				var jpeg = this.jpeg;
 				var archiveDest = this.archiveDest;
 				var thumbFile = this.thumbFile;
 				return function(fn) {
-					gm(outPath)
+					console.log('converting: '+jpeg+' => '+thumbFile);
+					console.log('\tcopying '+source+' => '+archiveDest);
+					gm(jpeg)
 						.resize(THUMBNAIL.width, THUMBNAIL.height)
 						.geometry(THUMBNAIL.width, THUMBNAIL.height)
 						.write(thumbFile, function(err) {
@@ -122,11 +129,47 @@ function processPDFs(dir, relPath) {
 				};
 			}).apply({
 				source: dir+'/'+file,
+				jpeg: outPath,
 				archiveDest: REMOTE.archive+subPath+'/'+file,
 				thumbFile: REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg'
 			}));
 		}
-
+		
+		// this file is a jpeg
+		else if(/\.jpe?g$/i.test(file)) {
+		
+			// prepare the path for the output file
+			var outPath = REMOTE.data+'/'+SUB.full+subPath+'/'+file;
+			
+			functionQueue.push((function() {
+				// generate a thumbnail verison of the image
+				var source = this.source;
+				var jpeg = this.jpeg;
+				var archiveDest = this.archiveDest;
+				var thumbFile = this.thumbFile;
+				return function(fn) {
+					console.log('converting: '+source+' => '+thumbFile);
+					console.log('\tcopying '+source+' => '+archiveDest);
+					console.log('\tmoving '+source+' => '+jpeg);
+					gm(source)
+						.resize(THUMBNAIL.width, THUMBNAIL.height)
+						.geometry(THUMBNAIL.width, THUMBNAIL.height)
+						.write(thumbFile, function(err) {
+							if(err) console.error('failed to generate thumbnail: '+err);
+							moveFile(source, jpeg, function() {
+								copyFile(source, archiveDest, function() {
+									fs.unlink(source, fn);
+								});
+							});
+						});
+				};
+			}).apply({
+				source: dir+'/'+file,
+				jpeg: outPath,
+				archiveDest: REMOTE.archive+subPath+'/'+file,
+				thumbFile: REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg'
+			}));
+		}
 	}
 
 	// pop cwd

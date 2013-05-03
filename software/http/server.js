@@ -32,6 +32,16 @@ app.get('/server/get-posters.json', function(req, res) {
 	);
 });
 
+// for config
+app.get('/get/config.json', function(req, res) {
+	res.setHeader('Content-Type', 'application/json');
+	var config = require('../config.js');
+	res.end(
+		JSON.stringify(config)
+	);
+});
+
+
 // for the index page
 app.get('/', function(req, res) {
 	res.setHeader('Content-Type', 'text/html');
@@ -91,6 +101,14 @@ function getPosterJson(path) {
 					src: 'data/full'+path+'/'+file,
 					thumb: 'data/thumb'+path+'/'+file,
 					type: 'image',
+				});
+			}
+			else if(/\.(mp4|ogv|webmv|webm|flv|mov)$/i.test(file)) {
+				resFiles.push({
+					title: file.substr(0, file.lastIndexOf('.')),
+					src: 'data/full'+path+'/'+file,
+					thumb: 'data/thumb'+path+'/'+file+'.jpg',
+					type: 'video',
 				});
 			}
 		}

@@ -4,7 +4,7 @@ var root = 'Q:/Posters';
 exports.config = {
 
 	LOCAL: {
-		data: '../../Poster Data',
+		data: '../../remote/Poster Data',
 	},
 
 	REMOTE: {
@@ -25,6 +25,11 @@ exports.config = {
 	THUMBNAIL: {
 		width: 211,
 		height: 160,
+	},
+	
+	AUTONOMOUS_MODE: {
+		idle_timeout_seconds: 10,
+		poster_duration_seconds: 5,
 	},
 
 };
