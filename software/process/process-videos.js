@@ -44,9 +44,7 @@ processVids(
 	REMOTE.source
 );
 
-processCommandQueue();
-
-
+var finish;
 
 // process and convert PDFs
 function processVids(dir, relPath) {
@@ -92,40 +90,50 @@ function processVids(dir, relPath) {
 		}
 
 		// if this file is a video
-		else if(/\.(mp4|ogv|webmv|webm|flv|mov)$/i.test(file)) {
+		else if(/\.(mp4|ogv|webmv|webm|flv|mov|m4v)$/i.test(file)) {
 
 			// prepare the path for the output file
-			var thumbPath = REMOTE.data+'/'+SUB.thumb+subPath+'/'+file;
+			var thumbPath = REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg';
 			var input = dir+'/'+file;
 
 			// generate thumbnail
-			var ss = getDuration(input) * 0.15; // get duration at 15%
-			var cmd = ['"ffmpeg.exe" -i '
-				+input+' '
-				+'-an -y -f mjpeg '
-				+'-ss '+ss+' '
-				+'-s '+THUMBNAIL.width+'x'+THUMBNAIL.height+' '
-				+'-vframes 1 '
-				+thumbPath, subPath+'/'+file];
-			
-			commandQueue.push(cmd);
-			functionQueue.push((function() {
-				// copy file to archive and move source to destination
-				var source = this.source;
-				var archiveDest = this.archiveDest;
-				var thumbFile = this.thumbFile;
-				return function(fn) {
-					copyFile(source, archiveDest, function() {
-						moveFile(source, archiveDest, function() {
-							
+			getDuration(input, function(totalDuration) {
+				var ss = totalDuration * 0.15; // get duration at 15%
+				var cmd = ['"ffmpeg.exe" -i '
+					+'"'+input+'" '
+					+'-an -y -f mjpeg '
+					+'-ss '+ss+' '
+					+'-s '+THUMBNAIL.width+'x'+THUMBNAIL.height+' '
+					+'-vframes 1 '
+					+'"'+thumbPath+'"', subPath+'/'+file];
+				
+				commandQueue.push(cmd);
+				functionQueue.push((function() {
+					// copy file to archive and move source to destination
+					var source = this.source;
+					var archiveDest = this.archiveDest;
+					var fullFile = this.fullFile;
+					
+					return function(fn) {
+						console.log('copying '+source+' => '+archiveDest);
+						copyFile(source, archiveDest, function() {
+							console.log('moving '+source+' => '+fullFile);
+							moveFile(source, fullFile, function() {
+								
+							});
 						});
-					});
-				};
-			}).apply({
-				source: dir+'/'+file,
-				archiveDest: REMOTE.archive+subPath+'/'+file,
-				fullFile: REMOTE.data+'/'+SUB.full+subPath+'/'+file
-			}));
+					};
+				}).apply({
+					source: dir+'/'+file,
+					archiveDest: REMOTE.archive+subPath+'/'+file,
+					fullFile: REMOTE.data+'/'+SUB.full+subPath+'/'+file
+				}));
+				
+				clearTimeout(finish);
+				finish = setTimeout(function() {
+					processCommandQueue();
+				}, 2000);
+			});
 		}
 
 	}
@@ -135,6 +143,7 @@ function processVids(dir, relPath) {
 }
 
 function processCommandQueue() {
+	console.log('processCommandQueue()');
 	if(!commandQueue.length) {
 		processFunctionQueue();
 	}
@@ -148,15 +157,14 @@ function processCommandQueue() {
 				console.error(err);
 				process.exit(1);
 			}
-			else {
-				processCommandQueue();
-			}
+			processCommandQueue();
 		});
 		process.chdir(cwd);
 	}
 };
 
 function processFunctionQueue() {
+	console.log('processFunctionQueue()');
 	if(!functionQueue.length) {
 		return;
 	}
@@ -208,14 +216,18 @@ function moveFile(source, target, cb) {
 }
 
 function getDuration(file, fn) {
-	child_process.exec($ffmpeg.' -i '.$file.' 2>&1', function(stdout) {
-		var duration = /Duration: (.*?)[.]/.exec(ignore, stdout);
+	var m_cwd = process.cwd();
+	process.chdir(toolsDir);
+	child_process.execFile('ffmpeg.exe',['-i',file], function(error, stdout, stderr) {
+		var duration = /Duration: (.*?)[.]/.exec(stderr);
 
 		var times = duration[1].split(/[:]/g);
 		var hours = times[0];
 		var mins = times[1];
 		var secs = times[2];
 		
-		return hours*60*60 + mins*60 + secs;
+		var total = parseInt(hours)*60*60 + parseInt(mins)*60 + parseInt(secs);
+		fn(total);
 	});
+	process.chdir(m_cwd);
 }

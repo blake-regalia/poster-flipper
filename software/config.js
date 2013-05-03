@@ -4,7 +4,7 @@ var root = 'Q:/Posters';
 exports.config = {
 
 	LOCAL: {
-		data: '../../remote/Poster Data',
+		data: '../../Poster Data',
 	},
 
 	REMOTE: {
@@ -28,8 +28,8 @@ exports.config = {
 	},
 	
 	AUTONOMOUS_MODE: {
-		idle_timeout_seconds: 10,
-		poster_duration_seconds: 5,
+		idle_timeout_seconds: 60*3,
+		poster_duration_seconds: 15,
 	},
 
 };
