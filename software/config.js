@@ -4,7 +4,7 @@ var root = 'Q:/Posters';
 exports.config = {
 
 	LOCAL: {
-		data: '../../Poster Data',
+		data: '../../remote/Poster Data',
 	},
 
 	REMOTE: {

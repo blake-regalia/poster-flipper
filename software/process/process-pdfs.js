@@ -156,10 +156,8 @@ function processPDFs(dir, relPath) {
 						.geometry(THUMBNAIL.width, THUMBNAIL.height)
 						.write(thumbFile, function(err) {
 							if(err) console.error('failed to generate thumbnail: '+err);
-							moveFile(source, jpeg, function() {
-								copyFile(source, archiveDest, function() {
-									fs.unlink(source, fn);
-								});
+							copyFile(source, archiveDest, function() {
+								moveFile(source, jpeg, function(){});
 							});
 						});
 				};
