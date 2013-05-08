@@ -157,7 +157,7 @@ function processPDFs(dir, relPath) {
 						.write(thumbFile, function(err) {
 							if(err) console.error('failed to generate thumbnail: '+err);
 							copyFile(source, archiveDest, function() {
-								moveFile(source, jpeg, function(){});
+								fs.renameSync(source, jpeg);
 							});
 						});
 				};
@@ -165,7 +165,7 @@ function processPDFs(dir, relPath) {
 				source: dir+'/'+file,
 				jpeg: outPath,
 				archiveDest: REMOTE.archive+subPath+'/'+file,
-				thumbFile: REMOTE.data+'/'+SUB.thumb+subPath+'/'+file+'.jpg'
+				thumbFile: REMOTE.data+'/'+SUB.thumb+subPath+'/'+file
 			}));
 		}
 	}
