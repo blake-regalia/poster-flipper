@@ -103,7 +103,7 @@ function getPosterJson(path) {
 					type: 'image',
 				});
 			}
-			else if(/\.(mp4|ogv|webmv|webm|flv|mov)$/i.test(file)) {
+			else if(/\.(mp4|ogv|webmv|webm|flv|mov|m4v)$/i.test(file)) {
 				resFiles.push({
 					title: file.substr(0, file.lastIndexOf('.')),
 					src: 'data/full'+path+'/'+file,
